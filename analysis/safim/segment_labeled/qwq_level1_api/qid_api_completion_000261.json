@@ -1,0 +1,410 @@
+{
+  "segments": [
+    {
+      "text": "Okay, I need to figure out what's missing in the Wav2Vec2ConformerRotaryPositionalEmbedding class.",
+      "start_char": 0,
+      "end_char": 98,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "The user mentioned that in the line where the cached_rotary_positional_embedding is assigned, there's a TODO.",
+      "start_char": 99,
+      "end_char": 208,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Let me look at the code again.",
+      "start_char": 209,
+      "end_char": 239,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "So, in the forward method of that class, after calculating the cosine and sine embeddings, they need to combine them into the cached variable. The current line is:\n\nself.cached_rotary_positional_embedding = # TODO:",
+      "start_char": 241,
+      "end_char": 455,
+      "label": "bug_fixing",
+      "label_info": {
+        "type": "bug_fixing"
+      }
+    },
+    {
+      "text": "Your code here.type_as(hidden_states)\n\nHmm.",
+      "start_char": 456,
+      "end_char": 499,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "The problem is probably how to combine the cos_embeddings and sin_embeddings.",
+      "start_char": 500,
+      "end_char": 577,
+      "label": "bug_fixing",
+      "label_info": {
+        "type": "bug_fixing"
+      }
+    },
+    {
+      "text": "Let me think: rotary embeddings usually involve interleaving sine and cosine, or maybe they are stored as two separate tensors? Wait, looking at the code steps before:\n\nAfter generating the freqs, they did embeddings = torch.cat((freqs, freqs), dim=-1). Then they compute cos and sin of those embeddings.",
+      "start_char": 578,
+      "end_char": 882,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "The cos_embeddings and sin_embeddings are each tensors of shape (sequence_length, 1, 1, dim/2*2?), but I need to check the dimensions.",
+      "start_char": 883,
+      "end_char": 1017,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Wait, the inv_freq is of length dim//2 because step is 2. So when they do freqs = einsum(\"i,j->ij\", time_stamps, inv_freq), each freqs has dim/2 elements. Then when they concatenate, the embeddings become dim elements (because each of the two parts is dim/2). Then when taking cos and sin, each of those is of shape (seq_len, 1, 1, dim).",
+      "start_char": 1019,
+      "end_char": 1356,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Wait, but for rotary embeddings, I recall that the idea is to apply the rotation to pairs of coordinates. So each pair (x, y) is rotated using cos and sin. So the embeddings here are for each position, a tensor of cos and sin values, but interleaved?",
+      "start_char": 1359,
+      "end_char": 1609,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Wait, perhaps the cached Rotary positional embedding is a tuple of (cosine, sine) or a tensor that contains both. Let me see the code again.",
+      "start_char": 1611,
+      "end_char": 1751,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Looking at the forward function, after calculating cos_embeddings and sin_embeddings, they need to store them in the cached variable. The line is incomplete.",
+      "start_char": 1754,
+      "end_char": 1911,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "The original line is trying to set self.cached_rotary... to something.",
+      "start_char": 1912,
+      "end_char": 1982,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "The line ends with .type_as(hidden_states), so the code before that must be the combination of the cosine and sine embeddings.",
+      "start_char": 1985,
+      "end_char": 2111,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Wait, perhaps the cached_rotary_positional_embedding is a tuple (cos_embeddings, sin_embeddings). But maybe in the code, they are supposed to combine them into a single tensor?",
+      "start_char": 2114,
+      "end_char": 2290,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Or perhaps the code is supposed to store both as a tuple, but in the given code, maybe the author intended to return both as a tuple.",
+      "start_char": 2291,
+      "end_char": 2424,
+      "label": "bug_fixing",
+      "label_info": {
+        "type": "bug_fixing"
+      }
+    },
+    {
+      "text": "Alternatively, maybe the code needs to return a tensor that combines them in some way.",
+      "start_char": 2427,
+      "end_char": 2513,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Wait, looking at the Rotary Positional Embedding concept, usually, for each position and each pair of dimensions, you have cos(theta) and sin(theta). So when applying the rotary matrix, you have something like the rotation matrix for each position. Wait, perhaps the cached_rotary_positional_embedding is supposed to be a tuple of cos and sin embeddings, so the code should be:\n\nself.cached_rotary_positional_embedding = (cos_embeddings, sin_embeddings) But then, the line would be:\n\nself.cached_rotary_positional_embedding = (cos_embeddings, sin_embeddings).type_as(hidden_states)",
+      "start_char": 2514,
+      "end_char": 3098,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Wait, but type_as applies to the tuple? No, that's not possible. So perhaps the line should assign the tuple, but each of the tensors needs to have the same dtype as hidden_states. But since the code uses .type_as(hidden_states), maybe the tensors are already in the right dtype, but perhaps they need to ensure that.",
+      "start_char": 3100,
+      "end_char": 3417,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Alternatively, maybe the line is supposed to return a tensor, but that might not be the case.",
+      "start_char": 3418,
+      "end_char": 3511,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Alternatively, maybe the user intended to store the two embeddings as a single tensor.",
+      "start_char": 3514,
+      "end_char": 3600,
+      "label": "bug_fixing",
+      "label_info": {
+        "type": "bug_fixing"
+      }
+    },
+    {
+      "text": "Wait, perhaps the code was missing the assignment of the tuple. Let me check the code again. The original code has:\n\ncos_embeddings = embeddings.cos()[:, None, None, :]\nsin_embeddings = embeddings.sin()[:, None, None, :]",
+      "start_char": 3601,
+      "end_char": 3823,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Then, the cached variable is supposed to be set here.",
+      "start_char": 3825,
+      "end_char": 3878,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "So, the code probably needs to store both cos and sin embeddings together.",
+      "start_char": 3879,
+      "end_char": 3953,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "The standard way for rotary embeddings is to have both cos and sin stored, so that when applying the rotation, you can compute the rotated query and key vectors.",
+      "start_char": 3954,
+      "end_char": 4115,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Therefore, the correct line would be to assign a tuple of cos and sin embeddings. So the missing code is (cos_embeddings, sin_embeddings).",
+      "start_char": 4118,
+      "end_char": 4256,
+      "label": "bug_fixing",
+      "label_info": {
+        "type": "bug_fixing"
+      }
+    },
+    {
+      "text": "Wait, but the line ends with .type_as(hidden_states). So perhaps the code was intended to have the tuple's elements converted to the hidden_states.dtype. But since cos and sin are already computed from embeddings which is in the same dtype as inv_freq (which is a buffer, so same as the module's dtype, which should be same as inputs?), maybe they don't need to convert.",
+      "start_char": 4259,
+      "end_char": 4629,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "However, the code says to do .type_as(hidden_states). So perhaps the correct code is:\n\nself.cached_rotary_positional_embedding = (cos_embeddings.type_as(hidden_states), sin_embeddings.type_as(hidden_states)) But then, the original line has the .type_as at the end, so the code might be written as:\n\nself.cached_rotary_positional_embedding = (cos_embeddings, sin_embeddings).type_as(hidden_states) ? But tuples don't have a type_as method. So that's not possible. So the correct way is to apply type_as to each element.",
+      "start_char": 4630,
+      "end_char": 5149,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Alternatively, perhaps the code was supposed to concatenate the cos and sin into a single tensor, but that doesn't make sense.",
+      "start_char": 5153,
+      "end_char": 5279,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Alternatively, maybe the code is supposed to return a tensor that has alternating sine and cosine? Wait no, the standard approach for rotary embeddings is to have for each position, a set of frequencies, then for each pair of dimensions, the cos and sin are applied. So in the code, the cos and sin are separate, so the cached variable is a tuple.",
+      "start_char": 5282,
+      "end_char": 5629,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Therefore, the missing code is (cos_embeddings, sin_embeddings).",
+      "start_char": 5632,
+      "end_char": 5696,
+      "label": "bug_fixing",
+      "label_info": {
+        "type": "bug_fixing"
+      }
+    },
+    {
+      "text": "Wait, but the existing code's line ends with .type_as, so the original line is probably missing the part before that. The line is:\n\nself.cached_rotary_positional_embedding = # TODO:",
+      "start_char": 5699,
+      "end_char": 5880,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Your code here.type_as(hidden_states) So the code before the .type_as is missing, and the code should be something like \n\nself.cached_rotary_positional_embedding = (cos_embeddings, sin_embeddings).type_as(...)",
+      "start_char": 5881,
+      "end_char": 6091,
+      "label": "bug_fixing",
+      "label_info": {
+        "type": "bug_fixing"
+      }
+    },
+    {
+      "text": "Wait, but tuples can't be converted with .type_as.",
+      "start_char": 6094,
+      "end_char": 6144,
+      "label": "bug_fixing",
+      "label_info": {
+        "type": "bug_fixing"
+      }
+    },
+    {
+      "text": "Therefore, perhaps the code is supposed to return a tensor that combines the cos and sin, but I'm not sure.",
+      "start_char": 6145,
+      "end_char": 6252,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Alternatively, maybe the code is supposed to return cos_embeddings and sin_embeddings as a tuple, but without type conversion.",
+      "start_char": 6253,
+      "end_char": 6379,
+      "label": "bug_fixing",
+      "label_info": {
+        "type": "bug_fixing"
+      }
+    },
+    {
+      "text": "The problem is that the code uses the inv_freq as a buffer, which is in the same device and dtype as the module's parameters. But perhaps hidden_states could be in a different dtype, so they need to cast the embeddings to match.",
+      "start_char": 6380,
+      "end_char": 6608,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Ah, right, because the hidden_states could be in a different dtype (e.g., half-precision), so the cos and sin tensors should be converted to that dtype. Therefore, the correct line would be:\n\nself.cached_rotary_positional_embedding = (cos_embeddings.type_as(hidden_states), sin_embeddings.type_as(hidden_states)) So the code that replaces the TODO is (cos_embeddings, sin_embeddings), but with each tensor converted to the hidden_states.dtype. Therefore, the line would be:\n\nself.cached_rotary_positional_embedding = (cos_embeddings.type_as(hidden_states), sin_embeddings.type_as(hidden_states)) But the original line is written as:\n\nself.cached_rotary_positional_embedding = # TODO: Your code here.type_as(hidden_states)\n\nWhich suggests that the code before the .type_as is missing, so perhaps the code is supposed to be:\n\nself.cached_rotary_positional_embedding = (cos_embeddings, sin_embeddings).type_as(hidden_states)\n\nBut that won't work because tuples can't be casted.",
+      "start_char": 6611,
+      "end_char": 7591,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Therefore, the correct code must be as I mentioned before, converting each tensor individually. So the missing part is (cos_embeddings, sin_embeddings), and then the .type_as applies to each. But how to write that in the line?",
+      "start_char": 7592,
+      "end_char": 7818,
+      "label": "bug_fixing",
+      "label_info": {
+        "type": "bug_fixing"
+      }
+    },
+    {
+      "text": "Alternatively, maybe the code is supposed to have the two variables as separate entries in the tuple but each converted. So the line would be:\n\nself.cached_rotary_positional_embedding = (cos_embeddings.type_as(hidden_states), sin_embeddings.type_as(hidden_states))\n\nWhich is the correct way.",
+      "start_char": 7821,
+      "end_char": 8112,
+      "label": "bug_fixing",
+      "label_info": {
+        "type": "bug_fixing"
+      }
+    },
+    {
+      "text": "Therefore, the missing code is this.",
+      "start_char": 8113,
+      "end_char": 8149,
+      "label": "bug_fixing",
+      "label_info": {
+        "type": "bug_fixing"
+      }
+    },
+    {
+      "text": "Therefore, the answer is to assign the tuple of cos and sin embeddings, each converted to the hidden_states' dtype. Now, looking back, the code had:\n\nself.cached_rotary_positional_embedding = # TODO: ... .type_as(hidden_states)",
+      "start_char": 8152,
+      "end_char": 8381,
+      "label": "bug_fixing",
+      "label_info": {
+        "type": "bug_fixing"
+      }
+    },
+    {
+      "text": "Wait, perhaps the original line was missing the tuple, and the .type_as is part of the code. But the way the line is written, the user probably expects that the code before the .type_as is the tuple. Wait, maybe the code was written as:\n\nself.cached_rotary_positional_embedding = torch.stack([cos_embeddings, sin_embeddings]).type_as(...) But that might not be the case.",
+      "start_char": 8383,
+      "end_char": 8753,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Alternatively, maybe the cached_rotary_positional_embedding is supposed to be a single tensor combining them somehow, but according to Rotary embeddings, it's more likely they are stored as a tuple. Therefore the correct code is the tuple with each converted. So the missing code is (cos_embeddings, sin_embeddings), but with each tensor cast to the hidden_states type. Thus, the line should read:\n\nself.cached_rotary_positional_embedding = (cos_embeddings.type_as(hidden_states), sin_embeddings.type_as(hidden_states))",
+      "start_char": 8757,
+      "end_char": 9282,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "That's the code that needs to be filled in the TODO.",
+      "start_char": 9284,
+      "end_char": 9336,
+      "label": "empty",
+      "label_info": {
+        "type": "empty"
+      }
+    }
+  ],
+  "original_reasoning": "Okay, I need to figure out what's missing in the Wav2Vec2ConformerRotaryPositionalEmbedding class. The user mentioned that in the line where the cached_rotary_positional_embedding is assigned, there's a TODO. Let me look at the code again.\n\nSo, in the forward method of that class, after calculating the cosine and sine embeddings, they need to combine them into the cached variable. The current line is:\n\nself.cached_rotary_positional_embedding = # TODO: Your code here.type_as(hidden_states)\n\nHmm. The problem is probably how to combine the cos_embeddings and sin_embeddings. Let me think: rotary embeddings usually involve interleaving sine and cosine, or maybe they are stored as two separate tensors? Wait, looking at the code steps before:\n\nAfter generating the freqs, they did embeddings = torch.cat((freqs, freqs), dim=-1). Then they compute cos and sin of those embeddings. The cos_embeddings and sin_embeddings are each tensors of shape (sequence_length, 1, 1, dim/2*2?), but I need to check the dimensions.\n\nWait, the inv_freq is of length dim//2 because step is 2. So when they do freqs = einsum(\"i,j->ij\", time_stamps, inv_freq), each freqs has dim/2 elements. Then when they concatenate, the embeddings become dim elements (because each of the two parts is dim/2). Then when taking cos and sin, each of those is of shape (seq_len, 1, 1, dim). \n\nWait, but for rotary embeddings, I recall that the idea is to apply the rotation to pairs of coordinates. So each pair (x, y) is rotated using cos and sin. So the embeddings here are for each position, a tensor of cos and sin values, but interleaved?\n\nWait, perhaps the cached Rotary positional embedding is a tuple of (cosine, sine) or a tensor that contains both. Let me see the code again. \n\nLooking at the forward function, after calculating cos_embeddings and sin_embeddings, they need to store them in the cached variable. The line is incomplete. The original line is trying to set self.cached_rotary... to something. \n\nThe line ends with .type_as(hidden_states), so the code before that must be the combination of the cosine and sine embeddings. \n\nWait, perhaps the cached_rotary_positional_embedding is a tuple (cos_embeddings, sin_embeddings). But maybe in the code, they are supposed to combine them into a single tensor? Or perhaps the code is supposed to store both as a tuple, but in the given code, maybe the author intended to return both as a tuple. \n\nAlternatively, maybe the code needs to return a tensor that combines them in some way. Wait, looking at the Rotary Positional Embedding concept, usually, for each position and each pair of dimensions, you have cos(theta) and sin(theta). So when applying the rotary matrix, you have something like the rotation matrix for each position. \n\nWait, perhaps the cached_rotary_positional_embedding is supposed to be a tuple of cos and sin embeddings, so the code should be:\n\nself.cached_rotary_positional_embedding = (cos_embeddings, sin_embeddings)\n\nBut then, the line would be:\n\nself.cached_rotary_positional_embedding = (cos_embeddings, sin_embeddings).type_as(hidden_states)\n\nWait, but type_as applies to the tuple? No, that's not possible. So perhaps the line should assign the tuple, but each of the tensors needs to have the same dtype as hidden_states. But since the code uses .type_as(hidden_states), maybe the tensors are already in the right dtype, but perhaps they need to ensure that. Alternatively, maybe the line is supposed to return a tensor, but that might not be the case. \n\nAlternatively, maybe the user intended to store the two embeddings as a single tensor. Wait, perhaps the code was missing the assignment of the tuple. Let me check the code again. \n\nThe original code has:\n\ncos_embeddings = embeddings.cos()[:, None, None, :]\nsin_embeddings = embeddings.sin()[:, None, None, :]\n\nThen, the cached variable is supposed to be set here. So, the code probably needs to store both cos and sin embeddings together. The standard way for rotary embeddings is to have both cos and sin stored, so that when applying the rotation, you can compute the rotated query and key vectors. \n\nTherefore, the correct line would be to assign a tuple of cos and sin embeddings. So the missing code is (cos_embeddings, sin_embeddings). \n\nWait, but the line ends with .type_as(hidden_states). So perhaps the code was intended to have the tuple's elements converted to the hidden_states.dtype. But since cos and sin are already computed from embeddings which is in the same dtype as inv_freq (which is a buffer, so same as the module's dtype, which should be same as inputs?), maybe they don't need to convert. However, the code says to do .type_as(hidden_states). So perhaps the correct code is:\n\nself.cached_rotary_positional_embedding = (cos_embeddings.type_as(hidden_states), sin_embeddings.type_as(hidden_states))\n\nBut then, the original line has the .type_as at the end, so the code might be written as:\n\nself.cached_rotary_positional_embedding = (cos_embeddings, sin_embeddings).type_as(hidden_states) ?\n\nBut tuples don't have a type_as method. So that's not possible. So the correct way is to apply type_as to each element. \n\nAlternatively, perhaps the code was supposed to concatenate the cos and sin into a single tensor, but that doesn't make sense. \n\nAlternatively, maybe the code is supposed to return a tensor that has alternating sine and cosine? Wait no, the standard approach for rotary embeddings is to have for each position, a set of frequencies, then for each pair of dimensions, the cos and sin are applied. So in the code, the cos and sin are separate, so the cached variable is a tuple. \n\nTherefore, the missing code is (cos_embeddings, sin_embeddings). \n\nWait, but the existing code's line ends with .type_as, so the original line is probably missing the part before that. The line is:\n\nself.cached_rotary_positional_embedding = # TODO: Your code here.type_as(hidden_states)\n\nSo the code before the .type_as is missing, and the code should be something like \n\nself.cached_rotary_positional_embedding = (cos_embeddings, sin_embeddings).type_as(...) \n\nWait, but tuples can't be converted with .type_as. Therefore, perhaps the code is supposed to return a tensor that combines the cos and sin, but I'm not sure. Alternatively, maybe the code is supposed to return cos_embeddings and sin_embeddings as a tuple, but without type conversion. The problem is that the code uses the inv_freq as a buffer, which is in the same device and dtype as the module's parameters. But perhaps hidden_states could be in a different dtype, so they need to cast the embeddings to match. \n\nAh, right, because the hidden_states could be in a different dtype (e.g., half-precision), so the cos and sin tensors should be converted to that dtype. \n\nTherefore, the correct line would be:\n\nself.cached_rotary_positional_embedding = (cos_embeddings.type_as(hidden_states), sin_embeddings.type_as(hidden_states))\n\nSo the code that replaces the TODO is (cos_embeddings, sin_embeddings), but with each tensor converted to the hidden_states.dtype. \n\nTherefore, the line would be:\n\nself.cached_rotary_positional_embedding = (cos_embeddings.type_as(hidden_states), sin_embeddings.type_as(hidden_states))\n\nBut the original line is written as:\n\nself.cached_rotary_positional_embedding = # TODO: Your code here.type_as(hidden_states)\n\nWhich suggests that the code before the .type_as is missing, so perhaps the code is supposed to be:\n\nself.cached_rotary_positional_embedding = (cos_embeddings, sin_embeddings).type_as(hidden_states)\n\nBut that won't work because tuples can't be casted. Therefore, the correct code must be as I mentioned before, converting each tensor individually. So the missing part is (cos_embeddings, sin_embeddings), and then the .type_as applies to each. But how to write that in the line? \n\nAlternatively, maybe the code is supposed to have the two variables as separate entries in the tuple but each converted. So the line would be:\n\nself.cached_rotary_positional_embedding = (cos_embeddings.type_as(hidden_states), sin_embeddings.type_as(hidden_states))\n\nWhich is the correct way. Therefore, the missing code is this. \n\nTherefore, the answer is to assign the tuple of cos and sin embeddings, each converted to the hidden_states' dtype. \n\nNow, looking back, the code had:\n\nself.cached_rotary_positional_embedding = # TODO: ... .type_as(hidden_states)\n\nWait, perhaps the original line was missing the tuple, and the .type_as is part of the code. But the way the line is written, the user probably expects that the code before the .type_as is the tuple. Wait, maybe the code was written as:\n\nself.cached_rotary_positional_embedding = torch.stack([cos_embeddings, sin_embeddings]).type_as(...)\n\nBut that might not be the case. \n\nAlternatively, maybe the cached_rotary_positional_embedding is supposed to be a single tensor combining them somehow, but according to Rotary embeddings, it's more likely they are stored as a tuple. \n\nTherefore the correct code is the tuple with each converted. \n\nSo the missing code is (cos_embeddings, sin_embeddings), but with each tensor cast to the hidden_states type. \n\nThus, the line should read:\n\nself.cached_rotary_positional_embedding = (cos_embeddings.type_as(hidden_states), sin_embeddings.type_as(hidden_states))\n\nThat's the code that needs to be filled in the TODO."
+}

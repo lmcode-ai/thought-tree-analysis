@@ -1,0 +1,626 @@
+{
+  "segments": [
+    {
+      "text": "We are given two Python files that are meant to be run in sequence. First, let's analyze the first Python file (File 1):\n- It reads an input string `s`.\n- It has two main functions: `main_b` and `main`. However, the code actually calls `main()` and prints its return value unless it's None. - The `main` function does:\n    s = input()\n    s = '0' + s   # prepend a '0'\n    Then it iterates over the reversed string (from least significant digit to most) and does a dynamic programming (DP) calculation for two states: `pmin` and `mmin`.",
+      "start_char": 0,
+      "end_char": 537,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "The problem solved by `main` in File 1:\nWe are computing the minimal number of coins (or operations) to form the given number when we can either add or subtract coins at each digit?",
+      "start_char": 539,
+      "end_char": 720,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Actually, the problem is similar to: https://atcoder.jp/contests/abc155/tasks/abc155_e\n\nThe DP states:\n- `pmin`: minimal operations where we have an extra 1 carried to the next higher digit (i.e., we are in a state that we have an extra 10 to give so we can subtract that in the next digit) OR without carry?",
+      "start_char": 722,
+      "end_char": 1030,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Actually, the state names might be:\n  pmin: minimal operations when we have no overpayment (so we are at a non-borrow state) and mmin: when we have overpayment (or borrow) state. But looking at the recurrence:\n  npmin = min(pmin + 10 - (v+1), mmin + 10 - v)\n  nmmin = min(pmin + v+1, mmin + v)\n\nExplanation for state transitions:\nLet v = current digit.",
+      "start_char": 1031,
+      "end_char": 1384,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "We consider two states at the current digit (after processing the current digit, moving from right to left):\n- pmin: the minimal operations for having no borrow (or no debt) going into the next (more significant) digit? Actually, we are processing from least significant to most. After processing a digit, we are going to the next (more significant) digit.",
+      "start_char": 1386,
+      "end_char": 1742,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Actually, the state after processing the current digit:\n- `pmin` (state 0): the current digit is exactly paid without any carry-over (to the next higher digit) and without needing to borrow? But note: the recurrence is built from right to left. Alternatively, we can think of the state as:\n- `pmin`: the minimal operations for having no carry (from the current digit to the next more significant one) -> meaning we paid exactly the digit.\n- `mmin`: the minimal operations for having a carry (borrow) of 1 (meaning we actually overpaid by 10, so we have a credit of 1 for the next digit). But actually, the recurrence in the code is: For each digit (starting from the least significant, and going backwards), we have:\n  npmin = min( \n      pmin + (10 - (v+1)),   // if we were in state pmin (no borrow) and we choose to use a higher note that forces a borrow (so we give 10 - (v+1) coins and leave the next digit with an extra 1 to subtract) -> this actually creates a borrow? Or wait: if we have a current digit v, and we are in state pmin (meaning we have no carry from the lower digit), then we can either:\n        Option 1: pay exactly v coins (without carry) -> then we don't need to do anything? But the state pmin is the state without carry from the previous (lower) digit? Actually, the recurrence is set for the next state. Alternatively, let me try to map to known solutions for \"Payment\" problem:\n\nKnown solution for ABC155 E:\n\nLet dp[i][0] = minimum coins when no carry to the next digit at position i.\nLet dp[i][1] = minimum coins when there is a carry (so we have an extra 10 at the current digit). Then for digit d at position i (from least significant to most):\n  dp[i][0] = min( dp[i-1][0] + d, dp[i-1][1] + d + 1 )\n  dp[i][1] = min( dp[i-1][0] + (10 - d), dp[i-1][1] + (10 - (d+1)) ) But wait, in the known solution we have:\n  dp[i][0] = min( dp[i-1][0] + d, dp[i-1][1] + d + 1 )   # why d+1? Because if we have a carry from the lower digit, then we have an extra 10? Actually, no: the state dp[i][0] is for not leaving a carry to the next higher digit. How do we get that?\n      - We can have no carry from the next lower and we pay d exactly -> then no carry to next higher: cost d.\n      - Or we have a carry from the next lower (meaning we have an extra 1, so we have 10+d) and then we can pay by giving 10+d - (10 * k + d')? Actually, the known recurrence is:\n\nActually, the known solution from editorial:\n\ndp[0][0] = 0\ndp[0][1] = INF\nfor each digit d (from least significant to most):\n  dp[i+1][0] = min( dp[i][0] + d, dp[i][1] + d + 1 )\n  dp[i+1][1] = min( dp[i][0] + (10 - d), dp[i][1] + (10 - (d+1)) ) But note: in our code, we are going from the least significant to the most, and we have:\n\n  npmin = min( pmin + 10 - (v+1), mmin + 10 - v )\n  nmmin = min( pmin + v+1, mmin + v ) Wait, let me compare:\n\nLet:\n  pmin (current state) = dp[i][0]   -> no carry to the next (more significant) digit? Actually, we are processing from the current digit to the next more significant. The state we are in at the beginning of the digit is the carry from the less significant digits? Actually, the problem is defined on the string that we reversed. Alternatively, note the recurrence in the code:\n\n  for c in s[::-1]:\n      v = int(c)\n      npmin = min(pmin + 10 - (v+1), mmin + 10 - v)\n      nmmin = min(pmin + v+1, mmin + v)\n\nBut note that the initial state: \n  pmin = 0   (meaning no carry) and mmin = 0? Actually, no: the code initializes:\n      pmin = 1000\n      mmin = 0 But then the loop starts with the reversed string (least significant digit) and the first character is the last digit?",
+      "start_char": 1744,
+      "end_char": 5362,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "However, note that the string was prepended with '0'. So the reversed string has the prepended zero at the end? Actually, the string is reversed and then we iterate over each character. The first digit we process is the least significant. But the initial state: \n  We set pmin=1000 and mmin=0. Then we iterate over each character (each digit) in the reversed string. Why pmin=1000? Probably to set an initial high cost for the state that we don't want to use initially? Actually, we start at the most significant digit? No: we start at the least significant? Actually, the string is reversed and we start with the least significant.",
+      "start_char": 5364,
+      "end_char": 5998,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "However, we added a '0' at the most significant end? So when reversed, the first digit we process is the least significant of the original number, and the last digit we process is the '0' we added. But the known solution starts with the least significant digit and the state for no carry is 0 and carry is INF? Actually, we start with the most significant digit? No, the problem is that the DP is defined from the least significant to the most. In the known solution, we start at the least significant digit and the initial state (for the first digit) is:\n  dp[0][0] = 0   -> no carry from the next (non-existing) lower digit.\n  dp[0][1] = INF  -> we cannot have a carry from a non-existing digit. But in the given code, we start with pmin=1000 and mmin=0? That seems reversed: why is mmin=0? Actually, mmin might represent the state with a carry? Then we start with no carry? But then why is pmin=1000?",
+      "start_char": 5999,
+      "end_char": 6905,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Alternatively, note the initial state is set before the loop and then we iterate over the reversed string (including the added '0'). The added '0' at the front becomes the last digit in the reversed string?",
+      "start_char": 6908,
+      "end_char": 7114,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Actually, the string is reversed: \n  Original: '0' + s (so if s is \"123\", then we have \"0123\", reversed is \"3210\") Then we iterate over each character: first we get '3' (the last digit of the original number) and then '2','1','0'. But the initial state: we set pmin=1000 and mmin=0. Then we process the first digit (v=3). Then we update:\n\n  npmin = min(1000 + 10 - (3+1) = 1000+6, mmin+10-3=0+7 -> 7\n  nmmin = min(1000 + 3+1=1004, mmin+3=3) -> 3\n\nThen we set pmin=7, mmin=3 and move to the next digit (v=2).",
+      "start_char": 7115,
+      "end_char": 7624,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "After processing all digits, we take min(pmin, mmin). But the known solution for the last digit (the added '0') should leave with state0 (no carry) as the final state? And we don't want a carry at the end? So we take min of the two states?",
+      "start_char": 7626,
+      "end_char": 7866,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Actually, the added '0' is the most significant and we don't want a carry beyond that. So the algorithm is correct? Yes, because the problem (ABC155 E) uses this DP.",
+      "start_char": 7867,
+      "end_char": 8033,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Therefore, the first program computes the minimal number of coins needed to form the number (with the constraint of having to use coins that are powers of 10, and you can give more and get change). Now, the second Python file (File 2):\n- It reads a string `s`.\n- It counts the frequency of each character.",
+      "start_char": 8035,
+      "end_char": 8341,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "- Then it checks: if there is at most one character that has an odd frequency, then it prints \"First\".",
+      "start_char": 8342,
+      "end_char": 8444,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Otherwise, if there are more than one odd frequency, then:\n      if the total length is even: \"Second\"\n      if the total length is odd: \"First\"\n\nThis is a classic problem for a game of removing pairs?",
+      "start_char": 8445,
+      "end_char": 8646,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Actually, it's a known problem (like CodeForces problem) for a game where two players remove one occurrence of a character each turn until the string becomes a palindrome? The condition for the first player to win:\n\n- If the string is already a palindrome?",
+      "start_char": 8647,
+      "end_char": 8903,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Actually, the condition is about the number of odd frequency letters. But note: the condition in the code: If there is at most one odd frequency -> then the string can form a palindrome?",
+      "start_char": 8904,
+      "end_char": 9093,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "And then it prints \"First\" immediately? But wait, the game:\n\nThe problem is: two players take turns removing one character from the string. The player who can make the string a palindrome wins?",
+      "start_char": 9094,
+      "end_char": 9287,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Actually, the problem is likely: https://codeforces.com/problemset/problem/1684/B1? But the exact rules might vary. However, the code logic:\n\n  Count the frequency of each char. Count the number of chars with odd frequency. If that count is 0 or 1, then print \"First\". Otherwise, if the total length of the string is even, then print \"Second\". if the total length is odd, then print \"First\". This logic is known in the problem: \"String Game\".",
+      "start_char": 9288,
+      "end_char": 9746,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "The first move can be made by the first player, and then the moves alternate. But note: the condition for the first player to win:\n  If the initial string is already a palindrome? Actually, the condition is about the parity of the moves.",
+      "start_char": 9747,
+      "end_char": 9985,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Actually, the number of moves needed is (n - k) where k is the length of the palindrome we can form? But the game is about removing one character at a time until the string becomes a palindrome.",
+      "start_char": 9987,
+      "end_char": 10181,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Alternatively, note that the problem is: https://leetcode.com/problems/palindrome-permutation/ but with a game?",
+      "start_char": 10183,
+      "end_char": 10294,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Actually, the known solution for a similar problem: \n  If the number of characters with odd frequency is 0 or 1, then the string can be rearranged to a palindrome. But the game is about removing one character at a time?",
+      "start_char": 10297,
+      "end_char": 10516,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "And the players are trying to be the one to make the string become one that can be rearranged to a palindrome? But the code does not rearrange, it just removes. So the condition is:\n\n  Let k = number of odd frequency letters. The game: \n      In the first move, if k<=1, then first player wins immediately?",
+      "start_char": 10517,
+      "end_char": 10828,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Actually, the first player doesn't win immediately: the game continues until the string becomes a palindrome? But the problem statement is missing. However, the code does exactly:\n\n  cnt = 0\n  for key, value in dt.items():\n      if value % 2 != 0: if cnt < 1:\n              cnt += 1\n          else:\n              x = False\n              break\n\n  Then:\n      if x: print(\"First\")\n      elif not x and len(s) % 2 == 0: print(\"Second\")\n      elif not x and len(s) % 2 != 0: print(\"First\") So the condition:\n  Condition1: if at most one odd (x remains True) -> \"First\"\n  Condition2: if more than one odd (x becomes False) and the total length is even -> \"Second\"\n  Condition3: if more than one odd and the total length is odd -> \"First\"\n\nThis is a known solution for the problem: \"First\" wins if either:\n   - The string has at most one odd frequency (so it's already a palindrome permutation) -> then the first player can win?",
+      "start_char": 10829,
+      "end_char": 11764,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Actually, no: because the game is played by removing one character at a time until the string becomes a palindrome? But the known problem: \"A Simple Task\" or similar?",
+      "start_char": 11765,
+      "end_char": 11931,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Actually, the problem is: https://codeforces.com/contest/1684/problem/B1? But the sample:\n\nInput: \"a\"\n  Output: \"First\"\n\nInput: \"ab\"\n  Output: Condition: two odds? -> then x becomes False and length=2 (even) -> \"Second\"\n\nInput: \"abc\"\n  Output: Condition: three odds? -> x becomes False and length=3 (odd) -> \"First\"\n\nAnd the known solution for CodeForces 1684B1: \n  The answer is \"First\" if the number of distinct letters is odd, else \"Second\"? But wait, the sample: \n  \"a\": distinct=1 -> odd -> First -> matches. \"ab\": distinct=2 -> even -> Second -> matches. \"abc\": distinct=3 -> odd -> First -> matches. But wait, the code does not count distinct letters, it counts the number of letters that have odd frequency. So they are different.",
+      "start_char": 11936,
+      "end_char": 12687,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Alternatively, note that the problem might be: https://codeforces.com/problemset/problem/1684/B2? But without the exact problem, we trust the code.",
+      "start_char": 12691,
+      "end_char": 12838,
+      "label": "empty",
+      "label_info": {
+        "type": "empty"
+      }
+    },
+    {
+      "text": "Now, the chain: \n  The first program reads a string (which is a number) and computes an integer (the minimal coin operations).",
+      "start_char": 12842,
+      "end_char": 12968,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "The second program reads a string (which is the output of the first program? But wait: the first program prints an integer, so the second program reads that integer as a string? But the first program's output is a number (like 10, 20, etc.). The second program then counts the frequency of each digit in that number? Example: \n  Input to the first program: a string of digits (like \"36\") First program: \n      s = \"36\" -> becomes \"036\" -> then reversed: \"630\"\n      We initialize: pmin=1000, mmin=0 For the first digit '0'? Actually, wait: the string after prepending '0' is \"036\", reversed is \"630\". Then we iterate: c = '6': v=6\n          npmin = min(1000 + (10- (6+1)) = 1000+3=1003, 0 + (10-6)=4) -> 4\n          nmmin = min(1000 + (6+1)=1007, 0+6=6) -> 6\n          Then pmin=4, mmin=6 Next: c='3': v=3\n          npmin = min(4 + (10-4)=4+6=10, 6 + (10-3)=6+7=13) -> 10\n          nmmin = min(4+4=8, 6+3=9) -> 8\n          Then pmin=10, mmin=8 Next: c='0': v=0\n          npmin = min(10 + (10-1)=10+9=19, 8+10=18) -> 18\n          nmmin = min(10+1=11, 8+0=8) -> 8\n          Then min(18,8)=8 -> output 8. Then the second program reads the string \"8\" (which is the output of the first program). s = ['8']\n      dt: {'8':1} -> only one odd -> so x remains True -> output \"First\". So the entire chain: input \"36\" -> output \"First\". But note: the first program might call either main_b or main? The code calls main() because the __main__ block calls ret = main() and then prints it.",
+      "start_char": 12971,
+      "end_char": 14506,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Therefore, the chain is:\n  Step1: Read a string (a number) and compute an integer (the minimal coin operations) and convert to string and output.",
+      "start_char": 14508,
+      "end_char": 14653,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Step2: Read the output string from step1 and then do the frequency count and output either \"First\", \"Second\", or \"First\" again in the third case.",
+      "start_char": 14656,
+      "end_char": 14801,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Now, we have to write a single C program that does the entire chain without intermediate I/O.\n\nWe break the task:\n\n  Part1: Read the initial string (the number) from stdin.\n\n  Part2:",
+      "start_char": 14803,
+      "end_char": 14985,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Compute the DP as in the first program's main() function.\n\n  Part3: Convert the integer result from Part2 to a string (without printing it).\n\n  Part4: On that string, compute the frequency of each character and then apply the logic of the second program.\n\n  Part5: Print the result (\"First\" or \"Second\") to stdout.",
+      "start_char": 14986,
+      "end_char": 15300,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Constraints: \n  The input string in the first program can be up to 10^6 digits? But the problem (ABC155 E) says the number has up to 10^6 digits. So we must use a string to represent the number. The DP in the first program runs in O(n) and uses two variables (pmin, mmin). So we can do that. The second program runs in O(n) on the string representation of the integer from the first program.",
+      "start_char": 15302,
+      "end_char": 15699,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Since the integer from the first program is the minimal coin operations, and the coin operations for a number with n digits is at most 2*n? So the number of digits in the integer is at most 7 (if n is 10^6, then the minimal coin operations is about 2 * 10^6, which is 7 digits). So the string for the integer will be at most 7 or 8 characters.",
+      "start_char": 15700,
+      "end_char": 16043,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Therefore, the second part is trivial. But note: the first program's input might be very long (1e6 digits). So we cannot convert the entire number to an integer (because it would be too big). We must process the string. Therefore, the C program:\n\n  Step1: Read a string (the number) from stdin. We assume there are no spaces, just one line. Step2: Prepend a '0' to the string? But note: the first program does s = '0' + s. However, we must be cautious: we are going to reverse the string and then iterate.",
+      "start_char": 16044,
+      "end_char": 16554,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "We can do:\n\n      Allocate a new string of length (len+2) to hold the original string with a prepended '0' and then the null terminator. Then we reverse the entire string (including the prepended '0'). Step3: Initialize two integers: pmin = 1000, mmin = 0. But note: the minimal operations might be up to the number of digits?",
+      "start_char": 16555,
+      "end_char": 16891,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Actually, the minimal operations is at most 2 * (number of digits). But the number of digits is 1e6, so we cannot use 1000 as infinity? Actually, we should set a safe infinity. Since the maximum operations is about 2 * (n+1) (each digit we pay at most 10 coins?",
+      "start_char": 16892,
+      "end_char": 17153,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Actually, the recurrence: we are adding at most 10 per digit? But we have 1e6 digits, so maximum operations might be 10e6? We can use a large integer (long long) and set INF to 1LL<<60. However, the original Python code uses pmin=1000 arbitrarily? But the actual minimal operations might be larger?",
+      "start_char": 17154,
+      "end_char": 17455,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "For example, for a string of 1e6 digits, the minimal operations might be about 1e6? So 1000 is not enough. We should set an initial state that is safe. Actually, the known solution for ABC155 E sets:\n      dp[0][0] = 0\n      dp[0][1] = INF (a big number)\n\n  But in the given code, they set:\n      pmin = 1000   # state0: no borrow? mmin = 0      # state1: borrow? Why mmin=0? And why pmin=1000?",
+      "start_char": 17456,
+      "end_char": 17863,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "The state before processing the first digit (the least significant digit of the original number) should be: we have no carry from the non-existent lower digit? So we should start with state0 (no carry) as 0 and state1 (carry) as INF? But the code sets pmin=1000 and mmin=0. That seems backwards? Because then mmin=0 is the state with carry? And we start with a carry? That doesn't make sense.",
+      "start_char": 17868,
+      "end_char": 18264,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Alternatively, the added '0' at the front is the most significant? But we reversed the string and then we start with the least significant (which is the last digit of the original).",
+      "start_char": 18268,
+      "end_char": 18449,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "And the state we are in at the beginning (for the least significant digit) is: we have no carry from the lower digit? So we should set state0 (pmin) to 0 and state1 (mmin) to a big number? However, the code sets pmin=1000 and mmin=0. Then in the first iteration, the state0 (pmin) is set to 10 - (v+1) or 10 - v? and state1 (mmin) is set to v+1 or v? But the known solution for the first digit (v) is:\n\n      dp[0][0] = min( 0 + v, INF + ... ) -> v\n      dp[0][1] = min( 0 + (10 - v), INF + ... ) -> 10 - v But in the given code, we get:\n      npmin = min( 1000 + (10 - (v+1)), 0 + (10 - v) ) -> min(1000+ (9-v), 10-v) -> 10-v\n      nmmin = min( 1000 + (v+1), 0 + v ) -> v\n\n  Then we set pmin = 10-v, mmin = v.\n\n  Then for the next digit, we use these values. But the known solution would have state0 = v and state1 = 10-v? So the given code is starting with state1 (mmin) as 0 and then the first update uses state1 for the no-carry state? Actually, the state names are reversed?",
+      "start_char": 18450,
+      "end_char": 19447,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "The known solution:\n\n      state0: no carry from the current digit to the next (more significant) digit.\n      state1: we have a carry (a borrow) to the next digit. In the given code, the states after the update are:\n      pmin = npmin -> which is the state0 for the next digit? mmin = nmmin -> which is the state1 for the next digit. And the recurrence:\n\n      npmin = min( pmin + 10 - (v+1), mmin + 10 - v ) \n        = min( state0_prev + 10 - (v+1), state1_prev + 10 - v )\n      nmmin = min( pmin + v+1, mmin + v )\n        = min( state0_prev + v+1, state1_prev + v )\n\n  This recurrence matches the known solution for state0 and state1?",
+      "start_char": 19448,
+      "end_char": 20098,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Actually, the known recurrence for state0 at the next digit (after processing the current digit) is:\n        state0_next = min( state0_prev + (v) , state1_prev + (v+1) ) [if we are paying exactly?] -> but that doesn't match.",
+      "start_char": 20103,
+      "end_char": 20329,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Alternatively, the known solution for the next state (from the current state) is:\n\n        state0_next = min( state0_prev + v, state1_prev + v+1 )   -> no, that's for the next state without carry? Actually, the known recurrence for state0 (no carry to the next) is:\n\n        state0_next = min( \n            state0_prev + v,   // we pay v coins and leave no carry\n            state1_prev + v+1  // we were in a carry state (meaning we have an extra 10) so we have to pay v+1? \n        ) And for state1 (carry to the next) is:\n\n        state1_next = min(\n            state0_prev + (10 - v),   // we use a higher note: so we pay 10-v and leave a carry of 1 for the next? \n            state1_prev + (10 - (v+1)) // we were in a carry state and we use a higher note: we pay 10-(v+1) and leave a carry?\n        ) But note: the recurrence in the given code:\n\n        npmin = min( pmin + 10 - (v+1), mmin + 10 - v )\n        nmmin = min( pmin + v+1, mmin + v )\n\n  This does not match the known recurrence. Let me try to map:\n\n      npmin (state0_next) = min( state0_prev + (10 - (v+1)), state1_prev + (10 - v) ) \n      nmmin (state1_next) = min( state0_prev + (v+1), state1_prev + v )\n\n  Why would state0_next be computed by 10-(v+1) and 10-v?",
+      "start_char": 20333,
+      "end_char": 21580,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "And state1_next by v+1 and v?\n\n  Actually, the state0_next in the given code is the state that we will have a carry to the next? And state1_next is no carry?",
+      "start_char": 21581,
+      "end_char": 21738,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "The recurrence:\n\n      Option for state0_next (which means we will have a carry to the next?): \n          - If we were in state0_prev (no carry from the lower digit) and we choose to pay by giving a note that covers v+1? Then we get change: 10 - (v+1) coins?",
+      "start_char": 21743,
+      "end_char": 22001,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "And we leave a carry to the next (because we used a higher note, so the next digit gets an extra 1 to subtract). - If we were in state1_prev (we have a carry from the lower digit, meaning we have an extra 10)",
+      "start_char": 22002,
+      "end_char": 22220,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "and we choose to pay by giving a note that covers v (but we have to cover v plus the extra 1 from the carry?",
+      "start_char": 22221,
+      "end_char": 22329,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Actually, no: the carry from the lower digit is an extra 1 in the current digit? So the current digit becomes v+1? Then we pay 10 - (v+1) to get change? But then we don't leave a carry? This is confusing. Alternatively, let me look at the original problem and known solutions: \n\n  Known solution in C++ for ABC155 E:\n\n      string s; cin >> s;\n      s = \"0\" + s;\n      reverse(s.begin(), s.end());\n      int n = s.size();\n      vector<vector<int>> dp(n+1, vector<int>(2, 1000000000));\n      dp[0][0] = 0;\n      for (int i = 0; i < n; i++) {\n          for (int j = 0; j < 2; j++) {\n              int x = s[i] - '0';\n              x += j;\n              for (int a = 0; a < 10; a++) {\n                  int ni = i+1;\n                  int nj = 0;\n                  int b = a - x;\n                  if (b < 0) {\n                      nj = 1;\n                      b += 10;\n                  }\n                  int cost = a + b;\n                  dp[ni][nj] = min(dp[ni][nj], dp[i][j] + cost);\n              }\n          }\n      }\n      cout << dp[n][0] << endl;\n\n  But that is O(n*10*2). Another known solution:\n\n      #include <bits/stdc++.h>\n      using namespace std;\n      int main() {\n          string s; cin >> s;\n          s = \"0\" + s;\n          reverse(s.begin(), s.end());\n          int n = s.size();\n          vector<int> dp0(n+1, 1e9), dp1(n+1, 1e9);\n          dp0[0] = 0;\n          for (int i = 0; i < n; i++) {\n              int x = s[i] - '0';\n              for (int j = 0; j < 2; j++) {\n                  int y = x + j;\n                  for (int k = 0; k < 2; k++) {\n                      int z = y + k*10;\n                      for (int d = 0; d < 10; d++) {\n                          int e = z - d;\n                          if (e < 0) break;\n                          if (e >= 10) continue;\n                          int cost = d + e;\n                          if (k) {\n                              // carry from next\n                              if (e == 0) cost = d;\n                              else cost = d + (10 - e);\n                          } else {\n                              cost = d + e;\n                          }\n                          // next state: carry is (k? ...) actually, the next state carry is determined by the next digit?\n                      }\n                  }\n              }\n          }\n      }\n\n  There is a simpler solution:\n\n      string s; cin >> s;\n      s = \"0\" + s;\n      reverse(s.begin(), s.end());\n      int n = s.size();\n      int dp0 = 0, dp1 = 1<<30;\n      for (int i = 0; i < n; i++) {\n          int x = s[i]-'0';\n          int ndp0 = min(dp0 + x, dp1 + x);\n          int ndp1 = min(dp0 + (10 - x) + 1, dp1 + (10 - x) - 1);\n          dp0 = ndp0;\n          dp1 = ndp1;\n      }\n\n  This doesn't match. After research, the intended solution for ABC155 E is:\n\n      #include <bits/stdc++.h>\n      using namespace std;\n      int main() {\n          string s; cin >> s;\n          reverse(s.begin(), s.end());\n          s += '0';\n          int n = s.size();\n          vector<int> dp0(n+1, 1e9), dp1(n+1, 1e9);\n          dp0[0] = 0;\n          for (int i = 0; i < n; i++) {\n              int x = s[i] - '0';\n              for (int j = 0; j < 2; j++) {\n                  int y = x + j;\n                  if (y < 10) {\n                      // no carry\n                      dp0[i+1] = min(dp0[i+1], dp0[i] + y); dp0[i+1] = min(dp0[i+1], dp1[i] + y);\n                  } if (y > 0) {\n                      // carry: we pay 10 - y and leave a carry\n                      int z = 10 - y;\n                      dp1[i+1] = min(dp1[i+1], dp0[i] + z);\n                      dp1[i+1] = min(dp1[i+1], dp1[i] + z);\n                  }\n              }\n          }\n          cout << min(dp0[n], dp1[n]) << endl;\n      } But this is not matching either.",
+      "start_char": 22330,
+      "end_char": 26182,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Given the complexity, and since the original Python code passed the tests for the problem, we will trust the recurrence in the given Python code. However, we must set the initial state properly. The original Python code sets:\n\n      pmin = 1000\n      mmin = 0\n\n  And then processes the reversed string (which has been prepended by '0').",
+      "start_char": 26189,
+      "end_char": 26528,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "We will do the same, but note: the number of digits can be up to 1000000, so the minimal operations might be up to 1000000. Therefore, 1000 is not big enough for an initial state.",
+      "start_char": 26532,
+      "end_char": 26711,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "We should use a large number (like 1<<30) for the initial state that we don't want to use. But the state mmin is set to 0, which is the state that we have a carry? We start with no digits processed, so we should not start with a carry? Actually, the added '0' at the most significant means that we have an extra digit? And we start processing from the least significant. The initial state (before any digit) should be: no carry. So we should set:\n\n      pmin = 0   // state0: no carry, cost 0\n      mmin = INF // state1: carry, not allowed\n\n  But the given code sets pmin=1000 and mmin=0. There is a possibility that the states are labeled differently:",
+      "start_char": 26712,
+      "end_char": 27374,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "In the given code, after processing a digit, the state pmin is for no carry to the next digit, and mmin is for carry to the next digit. And for the first digit, we start with the state mmin=0 (carry state) and pmin=1000 (no carry state) -> but that seems backwards. However, the recurrence in the code for the first digit uses:\n\n      npmin = min( pmin + 10 - (v+1), mmin + 10 - v )\n      nmmin = min( pmin + v+1, mmin + v )\n\n  If we start with pmin=0 and mmin=INF, then:\n\n      npmin = min( 0 + (10 - (v+1)), INF ) -> 9-v\n      nmmin = min( 0 + v+1, INF ) -> v+1 Then we have two states: pmin=9-v, mmin=v+1. But the given code for the first digit (with v= the least significant digit) would have been:\n\n      npmin = min( 1000 + (10 - (v+1)), 0 + (10 - v) ) -> 10-v\n      nmmin = min( 1000 + (v+1), 0+v ) -> v\n\n  Why are they different?",
+      "start_char": 27382,
+      "end_char": 28231,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Given the discrepancy, and since the original Python code is used in production, we will follow the given code exactly. We will set:\n\n      long long pmin = 1000;\n      long long mmin = 0; But then we are in danger of overflow?",
+      "start_char": 28236,
+      "end_char": 28463,
+      "label": "bug_fixing",
+      "label_info": {
+        "type": "bug_fixing"
+      }
+    },
+    {
+      "text": "Because for 1e6 digits, the minimal operations might be around 1e6? So 1000 is not a safe initial state for pmin? It might be that the first digit calculation overrides it immediately? Actually, the first digit calculation: the state pmin (1000) is only used if we choose to use the state0 in the recurrence, but we have an alternative state1 (mmin=0) which is cheaper. So for the first digit, the state0 next is computed as min(1000+ (9-v), 0+ (10-v)) -> which is 10-v. And state1 next is v.\n\n  Then for the next digit, we use pmin=10-v and mmin=v.\n\n  So the initial 1000 only affects the first digit and then is gone. And 1000 is big enough because 10-v is at most 10.",
+      "start_char": 28467,
+      "end_char": 29141,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Therefore, we can keep the initial values as 1000 and 0. But to be safe for large numbers, we should use a large initial value for the state we don't want?",
+      "start_char": 29145,
+      "end_char": 29300,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Actually, the state0 (pmin) is not used in the first digit if we have state1 (mmin) as 0, which is cheaper. But if the first digit is 0, then:\n\n      v=0:\n        npmin = min(1000 + (10-1)=1000+9=1009, 0+ (10-0)=10) -> 10\n        nmmin = min(1000+1, 0+0)=0\n\n      Then pmin=10, mmin=0. That is the same as if we had set:\n\n      pmin = 0, mmin = INF -> \n        npmin = min(0+9, INF) = 9\n        nmmin = min(0+1, INF)=1\n\n      Then we would have 9 and 1. This is different: 9 and 1 vs 10 and 0. Which one is correct for the first digit being 0? The known problem example: \n      Input \"0\" -> then we have \"00\", reversed is \"00\"\n      First digit: 0\n        We can either pay 0 coins and have no carry -> cost 0? Or we can pay 10 coins and get 10 coins change? and then leave a carry? -> cost 10. But then the next digit: 0 becomes 0+carry? If we have a carry from the first digit, then the next digit becomes 1? Alternatively, the known solution for the problem (with the recurrence from the known editorial) should be:\n\n      dp[0][0] = 0\n      dp[0][1] = INF\n\n      For the first digit (v=0) at index0:\n          dp[1][0] = min( dp[0][0] + 0, dp[0][1] + 1 ) = min(0, INF) = 0.\n          dp[1][1] = min( dp[0][0] + 10, dp[0][1] + 9 ) = min(10, INF)=10. Then for the next digit (v=0) at index1: For state0:\n             dp[2][0] = min( dp[1][0] + 0, dp[1][1] + 1 ) = min(0, 10+1=11) = 0. For state1:\n             dp[2][1] = min( dp[1][0] + 10, dp[1][1] + 9 ) = min(10, 10+9=19) = 10. Then the answer is min(0,10)=0. But the given Python code for input \"0\" (or any string) is:\n\n      s = input() -> \"0\"\n      then s = '0'+'0' = \"00\"\n      reversed: \"00\"\n\n      pmin=1000, mmin=0\n      first digit (v=0): npmin = min(1000+9, 0+10)=10\n          nmmin = min(1000+1, 0+0)=0\n          then pmin=10, mmin=0\n      next digit (v=0):\n          npmin = min(10+9, 0+10)= min(19,10)=10\n          nmmin = min(10+1, 0+0)= min(11,0)=0\n      then min(10,0)=0. So the final answer is 0, which matches. Therefore, the given initial state (pmin=1000, mmin=0) works because in the first digit the state0 is set to 10 and state1 to 0, and then in the next digit state0 becomes 10 and state1 becomes 0, and then the next digit (which is the added '0') is processed similarly? Actually, the string \"00\" has two digits? The example: \"0\" becomes \"00\", which is two digits.",
+      "start_char": 29304,
+      "end_char": 31739,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "The first digit processed is the last digit of the string, which is the first '0' in \"00\" (which is the last in the original, but the first in the reversed). Then the next digit is the first '0' in the original (which is the prepended '0') and becomes the second in the reversed. So the given code works. Implementation in C:\n\n      Step1: Read the initial string (the number) from stdin. Step2: Prepend a '0' to the string. Step3: Reverse the string. Step4: Initialize:\n              long long pmin = 1000;\n              long long mmin = 0;\n\n      Step5: For each character in the reversed string (which is now the least significant to the most, including the prepended '0' at the end of the reversed string? Actually, the prepended '0' becomes the last character in the reversed string? But we reversed after prepending: \n                Original: \"123\" -> becomes \"0123\" -> reversed is \"3210\"\n\n      Step6: For each digit in the reversed string, convert char to int.\n\n      Step7: Update:\n              long long npmin = min( pmin + (10 - (v+1)), mmin + (10 - v) );\n              long long nmmin = min( pmin + (v+1), mmin + v );\n              pmin = npmin;\n              mmin = nmmin;\n\n      Step8: After the loop, result = min(pmin, mmin);\n\n      Step9: Convert the result (an integer) to a string. Step10: For the string from step9, count the frequency of each character. Step11: Count the number of characters that have an odd frequency. Step12: \n              if count_odd <= 1:\n                  print \"First\"\n              else:\n                  if the length of the string (the result string) is even:\n                      print \"Second\"\n                  else:\n                      print \"First\"\n\n  However, note: the second program uses the entire string (the digits of the integer) and the length of that string. But the second program does:\n\n      s = list(input())\n      ... then counts the frequency and then the length = len(s) (which is the number of digits). Example: if the result is 8, then the string is \"8\", length=1. But what if the result is 0? Then the string is \"0\", length=1. Special note: the result from step8 is an integer. We must convert it to a string without any extra spaces. However, what if the result is 0? Then we have to output the string \"0\".",
+      "start_char": 31740,
+      "end_char": 34090,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Steps for converting the integer to string: we can use sprintf. But the result might be as large as about 2e6? (for 1e6 digits) -> at most 7 digits. So we can allocate a small buffer (20 characters).",
+      "start_char": 34094,
+      "end_char": 34296,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Code structure:\n\n      #include <stdio.h>\n      #include <string.h>\n      #include <stdlib.h>\n      #include <limits.h>\n      #define min(a, b) ((a) < (b) ? (a) : (b))\n\n      int main() {\n          // Step1: read the initial string (the number)\n          char s[1000002]; // up to 10^6 digits, plus newline and null\n          fgets(s, sizeof(s), stdin);\n          int len = strlen(s);\n          if (len > 0 && s[len-1] == '\\n') {\n              s[len-1] = '\\0';\n              len--;\n          }\n\n          //",
+      "start_char": 34303,
+      "end_char": 34810,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Step2: prepend '0'\n          // We need a new string: one extra character for the '0' and one for the null. char *s0 = (char *)malloc(len+2); // +1 for '0' and +1 for null\n          s0[0] = '0';\n          strcpy(s0+1, s);\n          int new_len = len+1;\n\n          // Step3: reverse s0\n          for (int i = 0, j = new_len-1; i < j; i++, j--) {\n              char temp = s0[i];\n              s0[i] = s0[j];\n              s0[j] = temp;\n          }\n\n          // Step4: initialize pmin and mmin\n          long long pmin = 1000;\n          long long mmin = 0;\n\n          // Step5: iterate over the reversed string (which is now stored in s0, and we are going to process from index0 to new_len-1)\n          for (int i = 0; i < new_len; i++) {\n              int v = s0[i] - '0';\n              long long npmin = min( pmin + (10 - (v+1)), mmin + (10 - v) );\n              long long nmmin = min( pmin + (v+1), mmin + v );\n              pmin = npmin;\n              mmin = nmmin;\n          }\n          long long result_val = min(pmin, mmin);\n          free(s0);\n\n          // Step9: convert result_val to a string\n          char result_str[20];\n          sprintf(result_str, \"%lld\", result_val);\n\n          // Step10: count frequency and check odd counts\n          int freq[10] = {0}; // digits from '0' to '9'? But the string is the representation, which may have non-digit? No, it's integer. int result_len = strlen(result_str);\n          for (int i = 0; i < result_len; i++) {\n              char c = result_str[i];\n              if (c >= '0' && c <= '9') {\n                  freq[c - '0']++;\n              }\n          }\n\n          int odd_count = 0;\n          for (int i = 0; i < 10; i++) {\n              if (freq[i] % 2 != 0) {\n                  odd_count++;\n              }\n          }\n\n          // Step12: output\n          if (odd_count <= 1) {\n              printf(\"First\\n\");\n          } else {\n              if (result_len % 2 == 0) {\n                  printf(\"Second\\n\");\n              } else {\n                  printf(\"First\\n\");\n              }\n          }\n\n          return 0;\n      }\n\n  But wait: the second program counts frequency of characters, but the result_str is a string of digits. But what if the integer is negative? The problem states the number of coins is nonnegative, so we are safe. However, the minimal coin count is nonnegative.",
+      "start_char": 34811,
+      "end_char": 37184,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Also, the second program uses the entire string (which is the integer as a string) and counts every character (digit). But the digits are from '0' to '9'.",
+      "start_char": 37188,
+      "end_char": 37342,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "The frequency array of size 10 is enough. But note: the second program in Python uses a dictionary that can count any character. But here we only have digits.",
+      "start_char": 37343,
+      "end_char": 37501,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Also, the length of the string (result_str) is the number of characters, which is the same as the number of digits. Therefore, the code above should work.",
+      "start_char": 37508,
+      "end_char": 37665,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "However, we must be cautious: the first program in the chain outputs the integer without any extra spaces, and the second program reads that as a string. Our conversion to string with sprintf is the same. Let's test with \"36\" as input:\n\n      Step1: read \"36\" -> becomes \"0\" + \"36\" = \"036\"\n      Reverse: \"630\"\n      Then we iterate:\n\n          i=0: v=6\n             npmin = min(1000 + (10-7)=1000+3=1003, 0 + (10-6)=4) = 4\n             nmmin = min(1000+7, 0+6)=6\n             pmin=4, mmin=6\n\n          i=1: v=3\n             npmin = min(4 + (10-4)=4+6=10, 6 + (10-3)=13) = 10\n             nmmin = min(4+4=8, 6+3=9) = 8\n             pmin=10, mmin=8\n\n          i=2: v=0\n             npmin = min(10 + (10-1)=19, 8 + (10-0)=18) = 18\n             nmmin = min(10+1=11, 8+0=8) = 8\n          result_val = min(18,8)=8\n\n      Then convert 8 to string: \"8\"\n      freq: freq[8]=1 -> odd_count=1 -> so output \"First\"\n\n  This matches. But note: the example in the known editorial for the payment problem: \n      Input \"36\" -> output 8? But the known solution for the payment problem (ABC155 E) for \"36\" is 8. Therefore, we are confident. However, note that the minimal operations might be 0? Then the string is \"0\", which has one digit and the frequency of '0' is 1 -> odd_count=1 -> \"First\", which is correct. Another test: input \"0\" -> \n      After step1: \"0\" becomes \"00\", reversed=\"00\"\n      Process: i0: v=0: \n              npmin = min(1000+ (10-1)=1009, 0+10=10) = 10\n              nmmin = min(1000+1=1001, 0+0=0) = 0\n          i1: v=0:\n              npmin = min(10+9=19, 0+10=10)=10\n              nmmin = min(10+1=11, 0+0=0)=0\n          result_val = min(10,0)=0\n      Then convert 0 to \"0\", which has freq: '0':1 -> odd_count=1 -> \"First\"\n\n  But the known solution for \"0\" is 0? and then the second program outputs \"First\". However, the known problem: the payment for 0 is 0 coins? and then the string \"0\" is a palindrome? so the first player wins immediately? Therefore, we output the code accordingly. One more: input \"1\" -> \n      becomes \"01\", reversed=\"10\"\n      i0: v=1 -> \n          npmin = min(1000+(10-2)=1008, 0+9=9) = 9\n          nmmin = min(1000+2=1002, 0+1=1)=1\n      i1: v=0:\n          npmin = min(9+ (10-1)=9+9=18, 1+10=11) = 11\n          nmmin = min(9+1=10, 1+0=1) = 1\n      result_val = min(11,1)=1\n      Then string \"1\": freq: 1 (one odd) -> \"First\"\n\n  But the known minimal coins for \"1\" is 1? and then the string \"1\" is a palindrome? -> \"First\"\n\n  And if we have a result of 10 (which is two digits: '1','0') -> \n      freq: \n          '1':1 (odd)\n          '0':1 (odd) -> two odds -> then the length is 2 (even) -> \"Second\"\n\n  Therefore, the code is as below. Note: We assume the input number has at most 1000000 digits. We allocate a buffer of 1000002 for the initial string. Then we allocate new_len = len+2 for the prepended and reversed string.",
+      "start_char": 37669,
+      "end_char": 40576,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "We use long long for pmin and mmin because the minimal operations might be up to 2000000 (which is within 2e6, and long long can hold it). Let's code accordingly.",
+      "start_char": 40580,
+      "end_char": 40742,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    }
+  ],
+  "original_reasoning": "We are given two Python files that are meant to be run in sequence.\n\nFirst, let's analyze the first Python file (File 1):\n- It reads an input string `s`.\n- It has two main functions: `main_b` and `main`. However, the code actually calls `main()` and prints its return value unless it's None.\n- The `main` function does:\n    s = input()\n    s = '0' + s   # prepend a '0'\n    Then it iterates over the reversed string (from least significant digit to most) and does a dynamic programming (DP) calculation for two states: `pmin` and `mmin`.\n\nThe problem solved by `main` in File 1:\nWe are computing the minimal number of coins (or operations) to form the given number when we can either add or subtract coins at each digit? \nActually, the problem is similar to: https://atcoder.jp/contests/abc155/tasks/abc155_e\n\nThe DP states:\n- `pmin`: minimal operations where we have an extra 1 carried to the next higher digit (i.e., we are in a state that we have an extra 10 to give so we can subtract that in the next digit) OR without carry? Actually, the state names might be:\n  pmin: minimal operations when we have no overpayment (so we are at a non-borrow state) and mmin: when we have overpayment (or borrow) state.\n\nBut looking at the recurrence:\n  npmin = min(pmin + 10 - (v+1), mmin + 10 - v)\n  nmmin = min(pmin + v+1, mmin + v)\n\nExplanation for state transitions:\nLet v = current digit.\n\nWe consider two states at the current digit (after processing the current digit, moving from right to left):\n- pmin: the minimal operations for having no borrow (or no debt) going into the next (more significant) digit? Actually, we are processing from least significant to most. After processing a digit, we are going to the next (more significant) digit.\n\nActually, the state after processing the current digit:\n- `pmin` (state 0): the current digit is exactly paid without any carry-over (to the next higher digit) and without needing to borrow? But note: the recurrence is built from right to left.\n\nAlternatively, we can think of the state as:\n- `pmin`: the minimal operations for having no carry (from the current digit to the next more significant one) -> meaning we paid exactly the digit.\n- `mmin`: the minimal operations for having a carry (borrow) of 1 (meaning we actually overpaid by 10, so we have a credit of 1 for the next digit).\n\nBut actually, the recurrence in the code is:\n\nFor each digit (starting from the least significant, and going backwards), we have:\n  npmin = min( \n      pmin + (10 - (v+1)),   // if we were in state pmin (no borrow) and we choose to use a higher note that forces a borrow (so we give 10 - (v+1) coins and leave the next digit with an extra 1 to subtract) -> this actually creates a borrow? Or wait: if we have a current digit v, and we are in state pmin (meaning we have no carry from the lower digit), then we can either:\n        Option 1: pay exactly v coins (without carry) -> then we don't need to do anything? But the state pmin is the state without carry from the previous (lower) digit? Actually, the recurrence is set for the next state.\n\nAlternatively, let me try to map to known solutions for \"Payment\" problem:\n\nKnown solution for ABC155 E:\n\nLet dp[i][0] = minimum coins when no carry to the next digit at position i.\nLet dp[i][1] = minimum coins when there is a carry (so we have an extra 10 at the current digit).\n\nThen for digit d at position i (from least significant to most):\n  dp[i][0] = min( dp[i-1][0] + d, dp[i-1][1] + d + 1 )\n  dp[i][1] = min( dp[i-1][0] + (10 - d), dp[i-1][1] + (10 - (d+1)) )\n\nBut wait, in the known solution we have:\n  dp[i][0] = min( dp[i-1][0] + d, dp[i-1][1] + d + 1 )   # why d+1? Because if we have a carry from the lower digit, then we have an extra 10? Actually, no: the state dp[i][0] is for not leaving a carry to the next higher digit. How do we get that?\n      - We can have no carry from the next lower and we pay d exactly -> then no carry to next higher: cost d.\n      - Or we have a carry from the next lower (meaning we have an extra 1, so we have 10+d) and then we can pay by giving 10+d - (10 * k + d')? Actually, the known recurrence is:\n\nActually, the known solution from editorial:\n\ndp[0][0] = 0\ndp[0][1] = INF\nfor each digit d (from least significant to most):\n  dp[i+1][0] = min( dp[i][0] + d, dp[i][1] + d + 1 )\n  dp[i+1][1] = min( dp[i][0] + (10 - d), dp[i][1] + (10 - (d+1)) )\n\nBut note: in our code, we are going from the least significant to the most, and we have:\n\n  npmin = min( pmin + 10 - (v+1), mmin + 10 - v )\n  nmmin = min( pmin + v+1, mmin + v )\n\nWait, let me compare:\n\nLet:\n  pmin (current state) = dp[i][0]   -> no carry to the next (more significant) digit? Actually, we are processing from the current digit to the next more significant. The state we are in at the beginning of the digit is the carry from the less significant digits? Actually, the problem is defined on the string that we reversed.\n\nAlternatively, note the recurrence in the code:\n\n  for c in s[::-1]:\n      v = int(c)\n      npmin = min(pmin + 10 - (v+1), mmin + 10 - v)\n      nmmin = min(pmin + v+1, mmin + v)\n\nBut note that the initial state: \n  pmin = 0   (meaning no carry) and mmin = 0? Actually, no: the code initializes:\n      pmin = 1000\n      mmin = 0\n\nBut then the loop starts with the reversed string (least significant digit) and the first character is the last digit? However, note that the string was prepended with '0'. So the reversed string has the prepended zero at the end? Actually, the string is reversed and then we iterate over each character. The first digit we process is the least significant.\n\nBut the initial state: \n  We set pmin=1000 and mmin=0. Then we iterate over each character (each digit) in the reversed string.\n\nWhy pmin=1000? Probably to set an initial high cost for the state that we don't want to use initially? Actually, we start at the most significant digit? No: we start at the least significant? Actually, the string is reversed and we start with the least significant. However, we added a '0' at the most significant end? So when reversed, the first digit we process is the least significant of the original number, and the last digit we process is the '0' we added.\n\nBut the known solution starts with the least significant digit and the state for no carry is 0 and carry is INF? Actually, we start with the most significant digit? No, the problem is that the DP is defined from the least significant to the most.\n\nIn the known solution, we start at the least significant digit and the initial state (for the first digit) is:\n  dp[0][0] = 0   -> no carry from the next (non-existing) lower digit.\n  dp[0][1] = INF  -> we cannot have a carry from a non-existing digit.\n\nBut in the given code, we start with pmin=1000 and mmin=0? That seems reversed: why is mmin=0? Actually, mmin might represent the state with a carry? Then we start with no carry? But then why is pmin=1000? \n\nAlternatively, note the initial state is set before the loop and then we iterate over the reversed string (including the added '0'). The added '0' at the front becomes the last digit in the reversed string? Actually, the string is reversed: \n  Original: '0' + s (so if s is \"123\", then we have \"0123\", reversed is \"3210\")\n\nThen we iterate over each character: first we get '3' (the last digit of the original number) and then '2','1','0'.\n\nBut the initial state: we set pmin=1000 and mmin=0. Then we process the first digit (v=3). Then we update:\n\n  npmin = min(1000 + 10 - (3+1) = 1000+6, mmin+10-3=0+7 -> 7\n  nmmin = min(1000 + 3+1=1004, mmin+3=3) -> 3\n\nThen we set pmin=7, mmin=3 and move to the next digit (v=2).\n\nAfter processing all digits, we take min(pmin, mmin).\n\nBut the known solution for the last digit (the added '0') should leave with state0 (no carry) as the final state? And we don't want a carry at the end? So we take min of the two states? Actually, the added '0' is the most significant and we don't want a carry beyond that.\n\nSo the algorithm is correct? Yes, because the problem (ABC155 E) uses this DP.\n\nTherefore, the first program computes the minimal number of coins needed to form the number (with the constraint of having to use coins that are powers of 10, and you can give more and get change).\n\nNow, the second Python file (File 2):\n- It reads a string `s`.\n- It counts the frequency of each character.\n- Then it checks: if there is at most one character that has an odd frequency, then it prints \"First\". Otherwise, if there are more than one odd frequency, then:\n      if the total length is even: \"Second\"\n      if the total length is odd: \"First\"\n\nThis is a classic problem for a game of removing pairs? Actually, it's a known problem (like CodeForces problem) for a game where two players remove one occurrence of a character each turn until the string becomes a palindrome? The condition for the first player to win:\n\n- If the string is already a palindrome? Actually, the condition is about the number of odd frequency letters.\n\nBut note: the condition in the code:\n  If there is at most one odd frequency -> then the string can form a palindrome? And then it prints \"First\" immediately? But wait, the game:\n\nThe problem is: two players take turns removing one character from the string. The player who can make the string a palindrome wins? Actually, the problem is likely: https://codeforces.com/problemset/problem/1684/B1? But the exact rules might vary.\n\nHowever, the code logic:\n\n  Count the frequency of each char.\n  Count the number of chars with odd frequency.\n  If that count is 0 or 1, then print \"First\".\n  Otherwise, if the total length of the string is even, then print \"Second\".\n        if the total length is odd, then print \"First\".\n\nThis logic is known in the problem: \"String Game\". The first move can be made by the first player, and then the moves alternate.\n\nBut note: the condition for the first player to win:\n  If the initial string is already a palindrome? Actually, the condition is about the parity of the moves.\n\nActually, the number of moves needed is (n - k) where k is the length of the palindrome we can form? But the game is about removing one character at a time until the string becomes a palindrome.\n\nAlternatively, note that the problem is: https://leetcode.com/problems/palindrome-permutation/ but with a game? \n\nActually, the known solution for a similar problem: \n  If the number of characters with odd frequency is 0 or 1, then the string can be rearranged to a palindrome. But the game is about removing one character at a time? And the players are trying to be the one to make the string become one that can be rearranged to a palindrome? \n\nBut the code does not rearrange, it just removes. So the condition is:\n\n  Let k = number of odd frequency letters.\n\n  The game: \n      In the first move, if k<=1, then first player wins immediately? Actually, the first player doesn't win immediately: the game continues until the string becomes a palindrome? \n\nBut the problem statement is missing. However, the code does exactly:\n\n  cnt = 0\n  for key, value in dt.items():\n      if value % 2 != 0:\n          if cnt < 1:\n              cnt += 1\n          else:\n              x = False\n              break\n\n  Then:\n      if x: print(\"First\")\n      elif not x and len(s) % 2 == 0: print(\"Second\")\n      elif not x and len(s) % 2 != 0: print(\"First\")\n\nSo the condition:\n  Condition1: if at most one odd (x remains True) -> \"First\"\n  Condition2: if more than one odd (x becomes False) and the total length is even -> \"Second\"\n  Condition3: if more than one odd and the total length is odd -> \"First\"\n\nThis is a known solution for the problem: \"First\" wins if either:\n   - The string has at most one odd frequency (so it's already a palindrome permutation) -> then the first player can win? Actually, no: because the game is played by removing one character at a time until the string becomes a palindrome? \n\nBut the known problem: \"A Simple Task\" or similar? \n\nActually, the problem is: https://codeforces.com/contest/1684/problem/B1? But the sample:\n\nInput: \"a\"\n  Output: \"First\"\n\nInput: \"ab\"\n  Output: \n      Condition: two odds? -> then x becomes False and length=2 (even) -> \"Second\"\n\nInput: \"abc\"\n  Output: Condition: three odds? -> x becomes False and length=3 (odd) -> \"First\"\n\nAnd the known solution for CodeForces 1684B1: \n  The answer is \"First\" if the number of distinct letters is odd, else \"Second\"? \n\nBut wait, the sample: \n  \"a\": distinct=1 -> odd -> First -> matches.\n  \"ab\": distinct=2 -> even -> Second -> matches.\n  \"abc\": distinct=3 -> odd -> First -> matches.\n\nBut wait, the code does not count distinct letters, it counts the number of letters that have odd frequency.\n\nSo they are different.\n\nAlternatively, note that the problem might be: https://codeforces.com/problemset/problem/1684/B2? \n\nBut without the exact problem, we trust the code.\n\nNow, the chain: \n  The first program reads a string (which is a number) and computes an integer (the minimal coin operations).\n  The second program reads a string (which is the output of the first program? But wait: the first program prints an integer, so the second program reads that integer as a string? \n\nBut the first program's output is a number (like 10, 20, etc.). The second program then counts the frequency of each digit in that number? \n\nExample: \n  Input to the first program: a string of digits (like \"36\")\n  First program: \n      s = \"36\" -> becomes \"036\" -> then reversed: \"630\"\n      We initialize: pmin=1000, mmin=0\n      For the first digit '0'? Actually, wait: the string after prepending '0' is \"036\", reversed is \"630\". \n      Then we iterate:\n          c = '6': v=6\n          npmin = min(1000 + (10- (6+1)) = 1000+3=1003, 0 + (10-6)=4) -> 4\n          nmmin = min(1000 + (6+1)=1007, 0+6=6) -> 6\n          Then pmin=4, mmin=6\n          Next: c='3': v=3\n          npmin = min(4 + (10-4)=4+6=10, 6 + (10-3)=6+7=13) -> 10\n          nmmin = min(4+4=8, 6+3=9) -> 8\n          Then pmin=10, mmin=8\n          Next: c='0': v=0\n          npmin = min(10 + (10-1)=10+9=19, 8+10=18) -> 18\n          nmmin = min(10+1=11, 8+0=8) -> 8\n          Then min(18,8)=8 -> output 8.\n\n  Then the second program reads the string \"8\" (which is the output of the first program).\n      s = ['8']\n      dt: {'8':1} -> only one odd -> so x remains True -> output \"First\".\n\nSo the entire chain: input \"36\" -> output \"First\".\n\nBut note: the first program might call either main_b or main? The code calls main() because the __main__ block calls ret = main() and then prints it.\n\nTherefore, the chain is:\n  Step1: Read a string (a number) and compute an integer (the minimal coin operations) and convert to string and output.\n  Step2: Read the output string from step1 and then do the frequency count and output either \"First\", \"Second\", or \"First\" again in the third case.\n\nNow, we have to write a single C program that does the entire chain without intermediate I/O.\n\nWe break the task:\n\n  Part1: Read the initial string (the number) from stdin.\n\n  Part2: Compute the DP as in the first program's main() function.\n\n  Part3: Convert the integer result from Part2 to a string (without printing it).\n\n  Part4: On that string, compute the frequency of each character and then apply the logic of the second program.\n\n  Part5: Print the result (\"First\" or \"Second\") to stdout.\n\nConstraints: \n  The input string in the first program can be up to 10^6 digits? But the problem (ABC155 E) says the number has up to 10^6 digits. So we must use a string to represent the number.\n\n  The DP in the first program runs in O(n) and uses two variables (pmin, mmin). So we can do that.\n\n  The second program runs in O(n) on the string representation of the integer from the first program. Since the integer from the first program is the minimal coin operations, and the coin operations for a number with n digits is at most 2*n? So the number of digits in the integer is at most 7 (if n is 10^6, then the minimal coin operations is about 2 * 10^6, which is 7 digits). So the string for the integer will be at most 7 or 8 characters. Therefore, the second part is trivial.\n\nBut note: the first program's input might be very long (1e6 digits). So we cannot convert the entire number to an integer (because it would be too big). We must process the string.\n\nTherefore, the C program:\n\n  Step1: Read a string (the number) from stdin. We assume there are no spaces, just one line.\n\n  Step2: Prepend a '0' to the string? But note: the first program does s = '0' + s. However, we must be cautious: we are going to reverse the string and then iterate. We can do:\n\n      Allocate a new string of length (len+2) to hold the original string with a prepended '0' and then the null terminator.\n\n      Then we reverse the entire string (including the prepended '0').\n\n  Step3: Initialize two integers: pmin = 1000, mmin = 0. But note: the minimal operations might be up to the number of digits? Actually, the minimal operations is at most 2 * (number of digits). But the number of digits is 1e6, so we cannot use 1000 as infinity? Actually, we should set a safe infinity. Since the maximum operations is about 2 * (n+1) (each digit we pay at most 10 coins? Actually, the recurrence: we are adding at most 10 per digit? But we have 1e6 digits, so maximum operations might be 10e6? We can use a large integer (long long) and set INF to 1LL<<60.\n\n  However, the original Python code uses pmin=1000 arbitrarily? But the actual minimal operations might be larger? For example, for a string of 1e6 digits, the minimal operations might be about 1e6? So 1000 is not enough. We should set an initial state that is safe.\n\n  Actually, the known solution for ABC155 E sets:\n      dp[0][0] = 0\n      dp[0][1] = INF (a big number)\n\n  But in the given code, they set:\n      pmin = 1000   # state0: no borrow? \n      mmin = 0      # state1: borrow?\n\n  Why mmin=0? And why pmin=1000? \n\n  The state before processing the first digit (the least significant digit of the original number) should be: we have no carry from the non-existent lower digit? So we should start with state0 (no carry) as 0 and state1 (carry) as INF? \n\n  But the code sets pmin=1000 and mmin=0. That seems backwards? Because then mmin=0 is the state with carry? And we start with a carry? That doesn't make sense.\n\n  Alternatively, the added '0' at the front is the most significant? But we reversed the string and then we start with the least significant (which is the last digit of the original). And the state we are in at the beginning (for the least significant digit) is: we have no carry from the lower digit? So we should set state0 (pmin) to 0 and state1 (mmin) to a big number? \n\n  However, the code sets pmin=1000 and mmin=0. Then in the first iteration, the state0 (pmin) is set to 10 - (v+1) or 10 - v? and state1 (mmin) is set to v+1 or v? \n\n  But the known solution for the first digit (v) is:\n\n      dp[0][0] = min( 0 + v, INF + ... ) -> v\n      dp[0][1] = min( 0 + (10 - v), INF + ... ) -> 10 - v\n\n  But in the given code, we get:\n      npmin = min( 1000 + (10 - (v+1)), 0 + (10 - v) ) -> min(1000+ (9-v), 10-v) -> 10-v\n      nmmin = min( 1000 + (v+1), 0 + v ) -> v\n\n  Then we set pmin = 10-v, mmin = v.\n\n  Then for the next digit, we use these values.\n\n  But the known solution would have state0 = v and state1 = 10-v? So the given code is starting with state1 (mmin) as 0 and then the first update uses state1 for the no-carry state? \n\n  Actually, the state names are reversed? The known solution:\n\n      state0: no carry from the current digit to the next (more significant) digit.\n      state1: we have a carry (a borrow) to the next digit.\n\n  In the given code, the states after the update are:\n      pmin = npmin -> which is the state0 for the next digit? \n      mmin = nmmin -> which is the state1 for the next digit.\n\n  And the recurrence:\n\n      npmin = min( pmin + 10 - (v+1), mmin + 10 - v ) \n        = min( state0_prev + 10 - (v+1), state1_prev + 10 - v )\n      nmmin = min( pmin + v+1, mmin + v )\n        = min( state0_prev + v+1, state1_prev + v )\n\n  This recurrence matches the known solution for state0 and state1? \n\n  Actually, the known recurrence for state0 at the next digit (after processing the current digit) is:\n        state0_next = min( state0_prev + (v) , state1_prev + (v+1) )   [if we are paying exactly?] -> but that doesn't match.\n\n  Alternatively, the known solution for the next state (from the current state) is:\n\n        state0_next = min( state0_prev + v, state1_prev + v+1 )   -> no, that's for the next state without carry? \n\n  Actually, the known recurrence for state0 (no carry to the next) is:\n\n        state0_next = min( \n            state0_prev + v,   // we pay v coins and leave no carry\n            state1_prev + v+1  // we were in a carry state (meaning we have an extra 10) so we have to pay v+1? \n        )\n\n  And for state1 (carry to the next) is:\n\n        state1_next = min(\n            state0_prev + (10 - v),   // we use a higher note: so we pay 10-v and leave a carry of 1 for the next? \n            state1_prev + (10 - (v+1)) // we were in a carry state and we use a higher note: we pay 10-(v+1) and leave a carry?\n        )\n\n  But note: the recurrence in the given code:\n\n        npmin = min( pmin + 10 - (v+1), mmin + 10 - v )\n        nmmin = min( pmin + v+1, mmin + v )\n\n  This does not match the known recurrence.\n\n  Let me try to map:\n\n      npmin (state0_next) = min( state0_prev + (10 - (v+1)), state1_prev + (10 - v) ) \n      nmmin (state1_next) = min( state0_prev + (v+1), state1_prev + v )\n\n  Why would state0_next be computed by 10-(v+1) and 10-v? And state1_next by v+1 and v?\n\n  Actually, the state0_next in the given code is the state that we will have a carry to the next? And state1_next is no carry? \n\n  The recurrence:\n\n      Option for state0_next (which means we will have a carry to the next?): \n          - If we were in state0_prev (no carry from the lower digit) and we choose to pay by giving a note that covers v+1? Then we get change: 10 - (v+1) coins? And we leave a carry to the next (because we used a higher note, so the next digit gets an extra 1 to subtract).\n          - If we were in state1_prev (we have a carry from the lower digit, meaning we have an extra 10) and we choose to pay by giving a note that covers v (but we have to cover v plus the extra 1 from the carry? Actually, no: the carry from the lower digit is an extra 1 in the current digit? So the current digit becomes v+1? Then we pay 10 - (v+1) to get change? But then we don't leave a carry? \n\n  This is confusing.\n\n  Alternatively, let me look at the original problem and known solutions: \n\n  Known solution in C++ for ABC155 E:\n\n      string s; cin >> s;\n      s = \"0\" + s;\n      reverse(s.begin(), s.end());\n      int n = s.size();\n      vector<vector<int>> dp(n+1, vector<int>(2, 1000000000));\n      dp[0][0] = 0;\n      for (int i = 0; i < n; i++) {\n          for (int j = 0; j < 2; j++) {\n              int x = s[i] - '0';\n              x += j;\n              for (int a = 0; a < 10; a++) {\n                  int ni = i+1;\n                  int nj = 0;\n                  int b = a - x;\n                  if (b < 0) {\n                      nj = 1;\n                      b += 10;\n                  }\n                  int cost = a + b;\n                  dp[ni][nj] = min(dp[ni][nj], dp[i][j] + cost);\n              }\n          }\n      }\n      cout << dp[n][0] << endl;\n\n  But that is O(n*10*2).\n\n  Another known solution:\n\n      #include <bits/stdc++.h>\n      using namespace std;\n      int main() {\n          string s; cin >> s;\n          s = \"0\" + s;\n          reverse(s.begin(), s.end());\n          int n = s.size();\n          vector<int> dp0(n+1, 1e9), dp1(n+1, 1e9);\n          dp0[0] = 0;\n          for (int i = 0; i < n; i++) {\n              int x = s[i] - '0';\n              for (int j = 0; j < 2; j++) {\n                  int y = x + j;\n                  for (int k = 0; k < 2; k++) {\n                      int z = y + k*10;\n                      for (int d = 0; d < 10; d++) {\n                          int e = z - d;\n                          if (e < 0) break;\n                          if (e >= 10) continue;\n                          int cost = d + e;\n                          if (k) {\n                              // carry from next\n                              if (e == 0) cost = d;\n                              else cost = d + (10 - e);\n                          } else {\n                              cost = d + e;\n                          }\n                          // next state: carry is (k? ...) actually, the next state carry is determined by the next digit?\n                      }\n                  }\n              }\n          }\n      }\n\n  There is a simpler solution:\n\n      string s; cin >> s;\n      s = \"0\" + s;\n      reverse(s.begin(), s.end());\n      int n = s.size();\n      int dp0 = 0, dp1 = 1<<30;\n      for (int i = 0; i < n; i++) {\n          int x = s[i]-'0';\n          int ndp0 = min(dp0 + x, dp1 + x);\n          int ndp1 = min(dp0 + (10 - x) + 1, dp1 + (10 - x) - 1);\n          dp0 = ndp0;\n          dp1 = ndp1;\n      }\n\n  This doesn't match.\n\n  After research, the intended solution for ABC155 E is:\n\n      #include <bits/stdc++.h>\n      using namespace std;\n      int main() {\n          string s; cin >> s;\n          reverse(s.begin(), s.end());\n          s += '0';\n          int n = s.size();\n          vector<int> dp0(n+1, 1e9), dp1(n+1, 1e9);\n          dp0[0] = 0;\n          for (int i = 0; i < n; i++) {\n              int x = s[i] - '0';\n              for (int j = 0; j < 2; j++) {\n                  int y = x + j;\n                  if (y < 10) {\n                      // no carry\n                      dp0[i+1] = min(dp0[i+1], dp0[i] + y);\n                      dp0[i+1] = min(dp0[i+1], dp1[i] + y);\n                  }\n                  if (y > 0) {\n                      // carry: we pay 10 - y and leave a carry\n                      int z = 10 - y;\n                      dp1[i+1] = min(dp1[i+1], dp0[i] + z);\n                      dp1[i+1] = min(dp1[i+1], dp1[i] + z);\n                  }\n              }\n          }\n          cout << min(dp0[n], dp1[n]) << endl;\n      }\n\n  But this is not matching either.\n\n  Given the complexity, and since the original Python code passed the tests for the problem, we will trust the recurrence in the given Python code.\n\n  However, we must set the initial state properly. The original Python code sets:\n\n      pmin = 1000\n      mmin = 0\n\n  And then processes the reversed string (which has been prepended by '0').\n\n  We will do the same, but note: the number of digits can be up to 1000000, so the minimal operations might be up to 1000000. Therefore, 1000 is not big enough for an initial state. We should use a large number (like 1<<30) for the initial state that we don't want to use.\n\n  But the state mmin is set to 0, which is the state that we have a carry? We start with no digits processed, so we should not start with a carry? \n\n  Actually, the added '0' at the most significant means that we have an extra digit? And we start processing from the least significant. The initial state (before any digit) should be: no carry. So we should set:\n\n      pmin = 0   // state0: no carry, cost 0\n      mmin = INF // state1: carry, not allowed\n\n  But the given code sets pmin=1000 and mmin=0.\n\n  There is a possibility that the states are labeled differently: \n      In the given code, after processing a digit, the state pmin is for no carry to the next digit, and mmin is for carry to the next digit.\n\n  And for the first digit, we start with the state mmin=0 (carry state) and pmin=1000 (no carry state) -> but that seems backwards.\n\n  However, the recurrence in the code for the first digit uses:\n\n      npmin = min( pmin + 10 - (v+1), mmin + 10 - v )\n      nmmin = min( pmin + v+1, mmin + v )\n\n  If we start with pmin=0 and mmin=INF, then:\n\n      npmin = min( 0 + (10 - (v+1)), INF ) -> 9-v\n      nmmin = min( 0 + v+1, INF ) -> v+1\n\n  Then we have two states: pmin=9-v, mmin=v+1.\n\n  But the given code for the first digit (with v= the least significant digit) would have been:\n\n      npmin = min( 1000 + (10 - (v+1)), 0 + (10 - v) ) -> 10-v\n      nmmin = min( 1000 + (v+1), 0+v ) -> v\n\n  Why are they different? \n\n  Given the discrepancy, and since the original Python code is used in production, we will follow the given code exactly. We will set:\n\n      long long pmin = 1000;\n      long long mmin = 0;\n\n  But then we are in danger of overflow? Because for 1e6 digits, the minimal operations might be around 1e6? So 1000 is not a safe initial state for pmin? It might be that the first digit calculation overrides it immediately? \n\n  Actually, the first digit calculation: the state pmin (1000) is only used if we choose to use the state0 in the recurrence, but we have an alternative state1 (mmin=0) which is cheaper. So for the first digit, the state0 next is computed as min(1000+ (9-v), 0+ (10-v)) -> which is 10-v. And state1 next is v.\n\n  Then for the next digit, we use pmin=10-v and mmin=v.\n\n  So the initial 1000 only affects the first digit and then is gone. And 1000 is big enough because 10-v is at most 10.\n\n  Therefore, we can keep the initial values as 1000 and 0.\n\n  But to be safe for large numbers, we should use a large initial value for the state we don't want? Actually, the state0 (pmin) is not used in the first digit if we have state1 (mmin) as 0, which is cheaper. But if the first digit is 0, then:\n\n      v=0:\n        npmin = min(1000 + (10-1)=1000+9=1009, 0+ (10-0)=10) -> 10\n        nmmin = min(1000+1, 0+0)=0\n\n      Then pmin=10, mmin=0.\n\n  That is the same as if we had set:\n\n      pmin = 0, mmin = INF -> \n        npmin = min(0+9, INF) = 9\n        nmmin = min(0+1, INF)=1\n\n      Then we would have 9 and 1.\n\n  This is different: 9 and 1 vs 10 and 0.\n\n  Which one is correct for the first digit being 0? \n\n  The known problem example: \n      Input \"0\" -> then we have \"00\", reversed is \"00\"\n      First digit: 0\n        We can either pay 0 coins and have no carry -> cost 0? \n        Or we can pay 10 coins and get 10 coins change? and then leave a carry? -> cost 10.\n\n      But then the next digit: 0 becomes 0+carry? If we have a carry from the first digit, then the next digit becomes 1? \n\n  Alternatively, the known solution for the problem (with the recurrence from the known editorial) should be:\n\n      dp[0][0] = 0\n      dp[0][1] = INF\n\n      For the first digit (v=0) at index0:\n          dp[1][0] = min( dp[0][0] + 0, dp[0][1] + 1 ) = min(0, INF) = 0.\n          dp[1][1] = min( dp[0][0] + 10, dp[0][1] + 9 ) = min(10, INF)=10.\n\n      Then for the next digit (v=0) at index1:\n          For state0:\n             dp[2][0] = min( dp[1][0] + 0, dp[1][1] + 1 ) = min(0, 10+1=11) = 0.\n          For state1:\n             dp[2][1] = min( dp[1][0] + 10, dp[1][1] + 9 ) = min(10, 10+9=19) = 10.\n\n      Then the answer is min(0,10)=0.\n\n  But the given Python code for input \"0\" (or any string) is:\n\n      s = input() -> \"0\"\n      then s = '0'+'0' = \"00\"\n      reversed: \"00\"\n\n      pmin=1000, mmin=0\n      first digit (v=0):\n          npmin = min(1000+9, 0+10)=10\n          nmmin = min(1000+1, 0+0)=0\n          then pmin=10, mmin=0\n      next digit (v=0):\n          npmin = min(10+9, 0+10)= min(19,10)=10\n          nmmin = min(10+1, 0+0)= min(11,0)=0\n      then min(10,0)=0.\n\n  So the final answer is 0, which matches.\n\n  Therefore, the given initial state (pmin=1000, mmin=0) works because in the first digit the state0 is set to 10 and state1 to 0, and then in the next digit state0 becomes 10 and state1 becomes 0, and then the next digit (which is the added '0') is processed similarly? Actually, the string \"00\" has two digits? \n\n  The example: \"0\" becomes \"00\", which is two digits. The first digit processed is the last digit of the string, which is the first '0' in \"00\" (which is the last in the original, but the first in the reversed). Then the next digit is the first '0' in the original (which is the prepended '0') and becomes the second in the reversed.\n\n  So the given code works.\n\n  Implementation in C:\n\n      Step1: Read the initial string (the number) from stdin.\n\n      Step2: Prepend a '0' to the string.\n\n      Step3: Reverse the string.\n\n      Step4: Initialize:\n              long long pmin = 1000;\n              long long mmin = 0;\n\n      Step5: For each character in the reversed string (which is now the least significant to the most, including the prepended '0' at the end of the reversed string? Actually, the prepended '0' becomes the last character in the reversed string? But we reversed after prepending: \n                Original: \"123\" -> becomes \"0123\" -> reversed is \"3210\"\n\n      Step6: For each digit in the reversed string, convert char to int.\n\n      Step7: Update:\n              long long npmin = min( pmin + (10 - (v+1)), mmin + (10 - v) );\n              long long nmmin = min( pmin + (v+1), mmin + v );\n              pmin = npmin;\n              mmin = nmmin;\n\n      Step8: After the loop, result = min(pmin, mmin);\n\n      Step9: Convert the result (an integer) to a string.\n\n      Step10: For the string from step9, count the frequency of each character.\n\n      Step11: Count the number of characters that have an odd frequency.\n\n      Step12: \n              if count_odd <= 1:\n                  print \"First\"\n              else:\n                  if the length of the string (the result string) is even:\n                      print \"Second\"\n                  else:\n                      print \"First\"\n\n  However, note: the second program uses the entire string (the digits of the integer) and the length of that string.\n\n  But the second program does:\n\n      s = list(input())\n      ... then counts the frequency and then the length = len(s) (which is the number of digits).\n\n  Example: if the result is 8, then the string is \"8\", length=1.\n\n  But what if the result is 0? Then the string is \"0\", length=1.\n\n  Special note: the result from step8 is an integer. We must convert it to a string without any extra spaces.\n\n  However, what if the result is 0? Then we have to output the string \"0\".\n\n  Steps for converting the integer to string: we can use sprintf.\n\n  But the result might be as large as about 2e6? (for 1e6 digits) -> at most 7 digits.\n\n  So we can allocate a small buffer (20 characters).\n\n  Code structure:\n\n      #include <stdio.h>\n      #include <string.h>\n      #include <stdlib.h>\n      #include <limits.h>\n      #define min(a, b) ((a) < (b) ? (a) : (b))\n\n      int main() {\n          // Step1: read the initial string (the number)\n          char s[1000002]; // up to 10^6 digits, plus newline and null\n          fgets(s, sizeof(s), stdin);\n          int len = strlen(s);\n          if (len > 0 && s[len-1] == '\\n') {\n              s[len-1] = '\\0';\n              len--;\n          }\n\n          // Step2: prepend '0'\n          // We need a new string: one extra character for the '0' and one for the null.\n          char *s0 = (char *)malloc(len+2); // +1 for '0' and +1 for null\n          s0[0] = '0';\n          strcpy(s0+1, s);\n          int new_len = len+1;\n\n          // Step3: reverse s0\n          for (int i = 0, j = new_len-1; i < j; i++, j--) {\n              char temp = s0[i];\n              s0[i] = s0[j];\n              s0[j] = temp;\n          }\n\n          // Step4: initialize pmin and mmin\n          long long pmin = 1000;\n          long long mmin = 0;\n\n          // Step5: iterate over the reversed string (which is now stored in s0, and we are going to process from index0 to new_len-1)\n          for (int i = 0; i < new_len; i++) {\n              int v = s0[i] - '0';\n              long long npmin = min( pmin + (10 - (v+1)), mmin + (10 - v) );\n              long long nmmin = min( pmin + (v+1), mmin + v );\n              pmin = npmin;\n              mmin = nmmin;\n          }\n          long long result_val = min(pmin, mmin);\n          free(s0);\n\n          // Step9: convert result_val to a string\n          char result_str[20];\n          sprintf(result_str, \"%lld\", result_val);\n\n          // Step10: count frequency and check odd counts\n          int freq[10] = {0}; // digits from '0' to '9'? But the string is the representation, which may have non-digit? No, it's integer.\n          int result_len = strlen(result_str);\n          for (int i = 0; i < result_len; i++) {\n              char c = result_str[i];\n              if (c >= '0' && c <= '9') {\n                  freq[c - '0']++;\n              }\n          }\n\n          int odd_count = 0;\n          for (int i = 0; i < 10; i++) {\n              if (freq[i] % 2 != 0) {\n                  odd_count++;\n              }\n          }\n\n          // Step12: output\n          if (odd_count <= 1) {\n              printf(\"First\\n\");\n          } else {\n              if (result_len % 2 == 0) {\n                  printf(\"Second\\n\");\n              } else {\n                  printf(\"First\\n\");\n              }\n          }\n\n          return 0;\n      }\n\n  But wait: the second program counts frequency of characters, but the result_str is a string of digits. But what if the integer is negative? The problem states the number of coins is nonnegative, so we are safe.\n\n  However, the minimal coin count is nonnegative.\n\n  Also, the second program uses the entire string (which is the integer as a string) and counts every character (digit). But the digits are from '0' to '9'. The frequency array of size 10 is enough.\n\n  But note: the second program in Python uses a dictionary that can count any character. But here we only have digits.\n\n  Also, the length of the string (result_str) is the number of characters, which is the same as the number of digits.\n\n  Therefore, the code above should work.\n\n  However, we must be cautious: the first program in the chain outputs the integer without any extra spaces, and the second program reads that as a string. Our conversion to string with sprintf is the same.\n\n  Let's test with \"36\" as input:\n\n      Step1: read \"36\" -> becomes \"0\" + \"36\" = \"036\"\n      Reverse: \"630\"\n      Then we iterate:\n\n          i=0: v=6\n             npmin = min(1000 + (10-7)=1000+3=1003, 0 + (10-6)=4) = 4\n             nmmin = min(1000+7, 0+6)=6\n             pmin=4, mmin=6\n\n          i=1: v=3\n             npmin = min(4 + (10-4)=4+6=10, 6 + (10-3)=13) = 10\n             nmmin = min(4+4=8, 6+3=9) = 8\n             pmin=10, mmin=8\n\n          i=2: v=0\n             npmin = min(10 + (10-1)=19, 8 + (10-0)=18) = 18\n             nmmin = min(10+1=11, 8+0=8) = 8\n          result_val = min(18,8)=8\n\n      Then convert 8 to string: \"8\"\n      freq: freq[8]=1 -> odd_count=1 -> so output \"First\"\n\n  This matches.\n\n  But note: the example in the known editorial for the payment problem: \n      Input \"36\" -> output 8? \n      But the known solution for the payment problem (ABC155 E) for \"36\" is 8.\n\n  Therefore, we are confident.\n\n  However, note that the minimal operations might be 0? Then the string is \"0\", which has one digit and the frequency of '0' is 1 -> odd_count=1 -> \"First\", which is correct.\n\n  Another test: input \"0\" -> \n      After step1: \"0\" becomes \"00\", reversed=\"00\"\n      Process:\n          i0: v=0: \n              npmin = min(1000+ (10-1)=1009, 0+10=10) = 10\n              nmmin = min(1000+1=1001, 0+0=0) = 0\n          i1: v=0:\n              npmin = min(10+9=19, 0+10=10)=10\n              nmmin = min(10+1=11, 0+0=0)=0\n          result_val = min(10,0)=0\n      Then convert 0 to \"0\", which has freq: '0':1 -> odd_count=1 -> \"First\"\n\n  But the known solution for \"0\" is 0? and then the second program outputs \"First\".\n\n  However, the known problem: the payment for 0 is 0 coins? and then the string \"0\" is a palindrome? so the first player wins immediately? \n\n  Therefore, we output the code accordingly.\n\n  One more: input \"1\" -> \n      becomes \"01\", reversed=\"10\"\n      i0: v=1 -> \n          npmin = min(1000+(10-2)=1008, 0+9=9) = 9\n          nmmin = min(1000+2=1002, 0+1=1)=1\n      i1: v=0:\n          npmin = min(9+ (10-1)=9+9=18, 1+10=11) = 11\n          nmmin = min(9+1=10, 1+0=1) = 1\n      result_val = min(11,1)=1\n      Then string \"1\": freq: 1 (one odd) -> \"First\"\n\n  But the known minimal coins for \"1\" is 1? and then the string \"1\" is a palindrome? -> \"First\"\n\n  And if we have a result of 10 (which is two digits: '1','0') -> \n      freq: \n          '1':1 (odd)\n          '0':1 (odd) -> two odds -> then the length is 2 (even) -> \"Second\"\n\n  Therefore, the code is as below.\n\n  Note: We assume the input number has at most 1000000 digits. We allocate a buffer of 1000002 for the initial string. Then we allocate new_len = len+2 for the prepended and reversed string.\n\n  We use long long for pmin and mmin because the minimal operations might be up to 2000000 (which is within 2e6, and long long can hold it).\n\n  Let's code accordingly."
+}

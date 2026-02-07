@@ -1,0 +1,460 @@
+{
+  "segments": [
+    {
+      "text": "We are given three programs with missing parts. We must output only the missing code for each program in a JSON object. For program1.py:\nThe problem is to find a cell (a, b) that minimizes the maximum Manhattan distance to any black cell.",
+      "start_char": 0,
+      "end_char": 239,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "The provided code uses an approach by computing the extreme points in the transformed coordinates (i+j, i-j) and then computes candidate center (r, c) from the midpoints of these extremes. Then it checks a 3x3 neighborhood around (r, c) to account for integer rounding and picks the one with the smallest maximum Manhattan distance. The missing part is inside the double loop for i in [-1,0,1] and j in [-1,0,1]. We are to compute the maximum Manhattan distance from the candidate cell (cr, cc) to all black cells. However, note that the list `b` contains all black cell coordinates. We are to set `madist` to the maximum Manhattan distance from (cr, cc) to any black cell in `b`. So the missing code is:\n    madist = max(madist, abs(x - cr) + abs(y - cc)) But note: we are iterating over every black cell (x,y) in `b`. We must update `madist` to be at least the distance to the current black cell. However, note that `madist` is initialized to 0. We can do:\n\n    madist = max(madist, abs(x - cr) + abs(y - cc)) But we must do this for every black cell. Alternatively, we can compute the maximum over the entire list. The current loop is over every black cell. So the missing block is:\n\n    for x,y in b: d = abs(x - cr) + abs(y - cc)\n        if d > madist:\n            madist = d\n\nBut note: we can also use:\n\n        madist = max(madist, abs(x - cr) + abs(y - cc)) But note: the initial `madist` is 0, so the first distance will set it. This is correct. However, note that the problem constraints and the fact that the total n*m <= 10^6, but the inner loop is over the black cells and we are iterating 9 times (the 3x3 neighborhood) and the total black cells over all test cases is at most 10^6, so it is acceptable. But wait: the problem says the sum of n*m <= 10^6, so the total black cells is at most 10^6. And we are iterating 9 * (number of black cells in this test case) per test case. The total black cells over test cases is <= 10^6, so 9 * 10^6 is acceptable. So the missing code for program1.py is:\n\n    for x,y in b: d = abs(x - cr) + abs(y - cc)\n        if d > madist:\n            madist = d\n\nBut note: the code already has a line `madist = 0` before the inner loop. We can also write:\n\n        madist = max(madist, abs(x - cr) + abs(y - cc)) We'll write the latter for brevity. For program2.py:\nThe problem is about partitioning an array to maximize the sum of values. The value of a subarray is (length) if the sum is positive, 0 if zero, and (-length) if negative.",
+      "start_char": 240,
+      "end_char": 2750,
+      "label": "bug_fixing",
+      "label_info": {
+        "type": "bug_fixing"
+      }
+    },
+    {
+      "text": "We are given a dynamic programming solution that uses coordinate compression and two Fenwick trees (or segment trees) for maximum queries. The code already sets up:\n\n    dp = [0] * (n+1)\n    dmx = {0:0}   # but note: we have dmx[0]=0 at the beginning. Then for i from 1 to n:\n    dp[i] = max( ... ) And then we update the Fenwick trees and the dictionary `dmx`. The missing part is: after updating the Fenwick trees, we update `dmx` for the current prefix sum at index i. The comment says:\n    if dp[i] > dmx.get(pref[i], -INF):\n        # TODO: Your code here\n\nWe should set `dmx[pref[i]] = dp[i]` because we want to remember the best dp value we have for the prefix sum `pref[i]` (so that in the future we can use the condition: if we see the same prefix sum again, we can use the stored dp value). But note: the recurrence for dp[i] uses:\n    dp[i] = max( i + pfen.max(ordpos[i]),   # which corresponds to the case when the last segment has positive sum?\n                 nfen.max(n+1-ordneg[i]) - i,   # negative? dmx.get(pref[i], -INF)   # zero? because if the segment from j to i has sum=0, then we can use dp[j] and then the segment j+1.. i has value 0? Actually, note: the recurrence uses the fact that if we have the same prefix sum at j and i, then the segment from j+1 to i has sum 0 -> so the value of that segment is 0, and then we can do dp[i] = dp[j] (without adding anything for the segment) but wait: the recurrence in the code uses dmx.get(pref[i]) which is set to the best dp[j] for j with the same prefix sum. Then we can set:\n\n    dmx[pref[i]] = max(dmx.get(pref[i], -INF), dp[i]) But the condition is: if dp[i] is greater than the current value for pref[i] in dmx, then we update. So the missing code is:\n\n        dmx[pref[i]] = dp[i]\n\nBut note: the condition is already checking that dp[i] is greater than the current value. So we can simply assign. So:\n\n        dmx[pref[i]] = dp[i]\n\nFor program3.py:\nThe problem: for each integer x in the input, we want the minimum number of operations to turn x into 0 mod 32768. The operations are: add 1 mod 32768, or multiply by 2 mod 32768. We note that 32768 is 2^15.",
+      "start_char": 2752,
+      "end_char": 4907,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "We can use BFS from 0 backwards? But note: the modulus is 32768, so we can precompute the minimum steps for all numbers from 0 to 32767. However, the input n can be up to 32768, so we can precompute an array `ans` for all residues. We can do a BFS starting from 0 (which requires 0 steps). Then from 0, we can reverse the operations: Operation 1: (v+1) mod 32768 -> reversed: (v-1) mod 32768? But note: we are going backwards.",
+      "start_char": 4909,
+      "end_char": 5338,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Alternatively, we can consider:\n\n    Operation 1: from u, we can go to (u-1) mod 32768 (by reversing the add) but note: the reverse of adding 1 is subtracting 1. Operation 2: multiplying by 2 mod 32768: the reverse is not straightforward because multiplying by 2 is not invertible? But note: we are working modulo 32768. However, we can also consider: if we have v = (2 * u) mod 32768, then u could be v/2 if v is even? But also note: because of mod, we have two possibilities: u = v/2 or u = (v+32768)/2? Actually, the reverse operation: if we have a state v, then it could have come from:\n\n        Option 1: (v-1) mod 32768",
+      "start_char": 5339,
+      "end_char": 5969,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "[by doing the add operation last]\n        Option 2: if v is even, then from v/2 (by doing the multiply operation last) but also note: because of mod, we can also have (v/2 + 16384) because 2*(v/2+16384) mod 32768 = v? Actually, 2*(v/2+16384) = v + 32768 mod 32768 = v. So we have two possibilities for the multiply: v/2 and v/2+16384? But wait: the operation is: u = (2 * u_prev) mod 32768. So if we have v, then u_prev must satisfy: 2 * u_prev \u2261 v (mod 32768). The solutions are: u_prev = v/2 (if v is even) and u_prev = (v+32768)/2 (if v is even? no, wait: if v is even, then v/2 is an integer, and (v+32768)/2 = v/2 + 16384, which is also an integer. But note: 32768 is even, so if v is even, then both solutions are integers.",
+      "start_char": 5972,
+      "end_char": 6701,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "However, we are working modulo 32768, so we have two predecessors for the multiply operation: (v/2) mod 32768 and (v/2 + 16384) mod 32768? Actually, the equation 2*x \u2261 v (mod 32768) has two solutions when v is even? Actually, no: because 2 and 32768 are not coprime. The equation 2*x \u2261 v (mod 32768) has solutions only if 2 divides v. And then the solutions are x \u2261 v/2 (mod 16384). But wait, the modulus is 32768, so the solutions are x = v/2 + k * 16384 for k=0,1? Because the step is 32768/ gcd(2,32768)=32768/2=16384. So yes, two solutions: v/2 and v/2+16384. But note: we are in the range [0,32767]. So we have two possibilities: \n    u1 = v // 2\n    u2 = (v // 2) + 16384\n\nBut only if v is even. So the BFS:\n\n    Let dist[0] = 0. Queue starts with 0. For each node u popped from the queue:\n        Consider two reverse operations:\n\n        Reverse of add: (u-1) mod 32768 -> but if u==0, then (0-1) mod 32768 = 32767. We can do: v = (u-1) % 32768. If we haven't visited v, then dist[v] = dist[u] + 1, and push v.\n\n        Reverse of multiply: only if u is even?",
+      "start_char": 6702,
+      "end_char": 7780,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Actually, no: we can only reverse the multiply operation if u is even? But note: the equation 2*x \u2261 u (mod 32768) requires u to be even. So if u is even, then we have two predecessors: \n            v1 = u // 2\n            v2 = (u // 2) + 16384   (and then mod 32768? but note: if u//2 + 16384 is in the range [0,32767] so we don't need mod? but we can mod 32768 to be safe) Then if we haven't visited v1 or v2, we update. However, note: the problem asks for the minimum number of operations to make a_i equal to 0. We are going backwards from 0 to a_i?",
+      "start_char": 7781,
+      "end_char": 8343,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Actually, we are building the distances from 0 to every state. Then for each a_i, we output dist[a_i]. But note: the modulus is 32768, so we are working in a circle of 32768 states. But the constraints: n up to 32768, and we have 32768 states. So we can precompute the entire array `dist` for all states. However, the provided code does not precompute. It reads:\n\n    n,s=open(0)\n    for x in s.split():\n        # TODO: Your code here\n\nWe must output for each x the minimum number of operations.",
+      "start_char": 8344,
+      "end_char": 8842,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "We can precompute the `dist` array for all residues from 0 to 32767. Then for each x, we output dist[x]. But note: the modulus is 32768, and the states are 0..32767. Steps for precomputation:\n\n    dist = [-1] * 32768\n    from collections import deque\n    q = deque( )\n    dist[0] = 0\n    q.append(0) while q:\n        u = q.popleft()\n        # Reverse add: (u-1) mod 32768\n        v1 = (u - 1) % 32768\n        if dist[v1] == -1:\n            dist[v1] = dist[u] + 1\n            q.append(v1)\n\n        # Reverse multiply: if u is even, then two predecessors\n        if u % 2 == 0:\n            v2 = (u // 2) % 32768\n            if dist[v2] == -1:\n                dist[v2] = dist[u] + 1\n                q.append(v2)\n            v3 = (u // 2 + 16384) % 32768\n            if dist[v3] == -1:\n                dist[v3] = dist[u] + 1\n                q.append(v3)\n\nBut wait: is that correct? The reverse of the multiply operation: we have two possibilities. However, note that the two possibilities are distinct? For example, if u=0, then we get v2=0 and v3=16384. Then we set dist[0] is already 0, so we skip. Then we set dist[16384]=1. But then from 16384, we can do:\n    Reverse add: 16383 -> set to 2. Reverse multiply: 16384 is even -> then we get 8192 and 8192+16384=24576. So we need to do both. But note: the above BFS might not be optimal because we are doing two different reverse operations for the multiply? Actually, we are correctly generating the two predecessors.",
+      "start_char": 8844,
+      "end_char": 10322,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "However, we must note that the state space is 32768, and we are doing BFS so we get the minimum steps. But the problem: the operations are reversible?",
+      "start_char": 10324,
+      "end_char": 10474,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Actually, we are building the reverse graph: an edge from u to v means that from v we can get to u in one operation. Then the distance from 0 to v is the same as the distance from v to 0 in the original graph? Yes, because the graph is undirected? Actually, no: the operations are directed. But we are building the reverse graph. The reverse graph edges are:\n\n    Edge1: from u to (u-1) mod 32768: which corresponds to the original operation: from (u-1) mod 32768 we can do an add to get u.\n    Edge2: from u to u/2 mod 32768: which corresponds to the original operation: from u/2 we can multiply to get u (if we are at u/2, then multiply by 2 gives u mod 32768) -> but note: we have two possibilities?",
+      "start_char": 10476,
+      "end_char": 11178,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Actually, no: the original operation from u/2: multiply by 2 gives u. Similarly, from u/2+16384: multiply by 2 gives (u + 32768) mod 32768 = u.\n\nSo the reverse graph has two types of edges: \n    Type1: from u to (u-1) mod 32768 (with weight 1) \n    Type2: from u to (u/2) mod 32768 and to (u/2+16384) mod 32768 (if u is even) (with weight 1)\n\nBut note: the reverse of the multiply operation gives two predecessors only when u is even. So the BFS above is correct. But note: the modulus operation: (u-1) % 32768: if u=0, then (0-1) % 32768 = 32767. We must precompute the entire `dist` array for all residues. But the provided code does not precompute. We must add the precomputation? However, the problem says: \"Output only the missing lines or blocks\". The code in program3.py is:\n\n    n,s=open(0)\n    for x in s.split():# TODO: Your code here\n\nWe are to output the answer for each x.",
+      "start_char": 11179,
+      "end_char": 12068,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "We can precompute the `dist` array and then for each x, output dist[x]. But note: the precomputation must be done once at the beginning. So the missing code is:\n\n    Precomputation for all residues (if we haven't done it, we do it once) and then for each x, we output the precomputed value. But note: the modulus is 32768, and the numbers are in [0, 32767]. We can precompute the entire array.",
+      "start_char": 12069,
+      "end_char": 12464,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "How to do:\n\n    We do a BFS as above. Then we split the input string s, convert each to integer, and then output the dist for that integer. But note: the input is:\n\n    n = first line, then the second line has n integers. We can do:\n\n    n = int(n) a = list(map(int, s.split()))\n\n    # Precomputation for all residues (if we haven't done it, but we can do it once at the start of the program)\n\nBut the problem: the program3.py is run once per test?",
+      "start_char": 12466,
+      "end_char": 12920,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Actually, the problem says: the first line is n, then the next line has n integers. So we can precompute the dist array at the beginning. But note: the modulus is fixed (32768) and the state space is fixed. So we precompute once. So the code:\n\n    n = int(n)\n    a = list(map(int, s.split()))\n\n    # Precomputation\n    MOD = 32768\n    dist = [-1] * MOD\n    from collections import deque\n    q = deque( )\n    dist[0] = 0\n    q.append(0)\n    while q:\n        u = q.popleft()\n        # Reverse of add: (u-1) mod MOD\n        v1 = (u - 1) % MOD\n        if dist[v1] == -1:\n            dist[v1] = dist[u] + 1\n            q.append(v1)\n        # Reverse of multiply: two predecessors if u is even\n        if u % 2 == 0:\n            v2 = (u // 2) % MOD\n            if dist[v2] == -1:\n                dist[v2] = dist[u] + 1\n                q.append(v2)\n            v3 = (u // 2 + 16384) % MOD\n            if dist[v3] == -1:\n                dist[v3] = dist[u] + 1\n                q.append(v3)\n\n    # Then for each x in a, output dist[x]\n    # But the problem says: output n integers, space separated?\n    # We can output: \" \".join(str(dist[x]) for x in a) But note: the problem says: \"Print n integers.",
+      "start_char": 12921,
+      "end_char": 14112,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "The i-th integer should be equal to the minimum number of operations required to make a_i equal to 0.\" So we can do:\n\n    print(\" \".join(str(dist[x]) for x in a)) But the code is written as:\n\n    for x in s.split():\n        # TODO: Your code here\n\nWe must output the answer for each x. We can do:\n\n    res = []\n    for x in s.split():\n        x = int(x)\n        res.append(str(dist[x]))\n    print(\" \".join(res)) But note: we must precompute the dist array only once, not for each x. So the entire missing block is:\n\n    Precomputation for the entire state space, then process the integers. But note: the program3.py code is:\n\n    n,s=open(0)\n    for x in s.split():# TODO: Your code here\n\nWe cannot change the structure arbitrarily? We must fill in the TODO. Alternatively, we can restructure the code. But the problem says: \"Output only the missing lines or blocks\". We can output the entire block that replaces the TODO. But note: the TODO is inside the loop. However, we cannot precompute inside the loop for each x. So we must move the precomputation outside the loop. We can restructure:\n\n    n = int(n.strip())\n    a = list(map(int, s.split()))\n    # Precomputation for dist for all residues\n    MOD = 32768\n    dist = [-1] * MOD\n    from collections import deque\n    q = deque( )\n    dist[0] = 0\n    q.append(0)\n    while q:\n        u = q.popleft()\n        v1 = (u-1) % MOD\n        if dist[v1] == -1:\n            dist[v1] = dist[u] + 1\n            q.append(v1)\n        if u % 2 == 0:\n            v2 = u//2\n            if dist[v2] == -1:\n                dist[v2] = dist[u] + 1\n                q.append(v2)\n            v3 = (u//2 + 16384) % MOD\n            if dist[v3] == -1:\n                dist[v3] = dist[u] + 1\n                q.append(v3)\n    #",
+      "start_char": 14114,
+      "end_char": 15875,
+      "label": "bug_fixing",
+      "label_info": {
+        "type": "bug_fixing"
+      }
+    },
+    {
+      "text": "Now, we output the answers for each element in a\n    # But the for loop is over s.split(), which is the same as a.\n    # We can break out of the for loop? Actually, we don't want to run the precomputation for each x. So we must restructure the code. The problem says: \"Output only the missing code\". We can output the entire code for program3.py? But the problem says: \"Output only the missing lines or blocks\".",
+      "start_char": 15876,
+      "end_char": 16288,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Alternatively, we can do:\n\n    Precomputation outside the loop, and then inside the loop we just collect the answers? But the for loop is written to iterate over s.split(). We can break the loop and then output the entire list? But the structure is:\n\n    for x in s.split():\n        # TODO",
+      "start_char": 16290,
+      "end_char": 16579,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "We can do:\n\n    # Precomputation (if we haven't done it) - but we must do it once. We can do it before the loop? But the for loop is the only loop. # We can convert the entire s.split() to a list and then break out of the for loop? Actually, we can change the code. But note: the problem says: \"Output the missing code, NOT as markdown code. Do NOT output the entire program or explanations or any additional information. \"\n\nWe are to output the missing code for program3.py as a string in the JSON. We can write:\n\n    MOD = 32768\n    dist = [-1] * MOD\n    from collections import deque\n    q = deque([0]) dist[0] = 0\n    while q:\n        u = q.popleft()\n        v1 = (u-1) % MOD\n        if dist[v1] == -1:\n            dist[v1] = dist[u] + 1\n            q.append(v1)\n        if u % 2 == 0:\n            v2 = u // 2\n            if dist[v2] == -1:\n                dist[v2] = dist[u] + 1\n                q.append(v2)\n            v3 = (u // 2 + 16384) % MOD\n            if dist[v3] == -1:\n                dist[v3] = dist[u] + 1\n                q.append(v3)\n    #",
+      "start_char": 16581,
+      "end_char": 17648,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Now, we break the for loop and output the answers for all x in the list we built from s.split()\n    # But note: the for loop is already iterating over s.split(). We can break after the first iteration?",
+      "start_char": 17649,
+      "end_char": 17850,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "No.\n\nAlternatively, we can restructure the entire program. But the problem says: we are to fill in the missing lines or blocks.",
+      "start_char": 17851,
+      "end_char": 17978,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Given the structure, we must precompute the dist array once, and then for each x in the list, we output dist[int(x)]. But the for loop is:\n\n    for x in s.split():\n\nWe can do:\n\n    # Precomputation must be done once, so we do it before the loop? But we are inside the loop? We can do:\n\n    # We can check if we haven't precomputed, then precompute. But the for loop runs for each number.",
+      "start_char": 17980,
+      "end_char": 18370,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "We can precompute at the first iteration and then break? Then for the rest, we just use the precomputed dist. But note: the entire list s.split() is the second line. We can convert the entire list to integers and then output the answers at once. So we can do: # Convert the entire s.split() to a list of integers\n    arr = list(map(int, s.split()))\n    # Precomputation\n    MOD = 32768\n    dist = [-1] * MOD\n    from collections import deque\n    q = deque( )\n    dist[0] = 0\n    q.append(0)\n    while q:\n        u = q.popleft()\n        v1 = (u-1) % MOD\n        if dist[v1] == -1:\n            dist[v1] = dist[u] + 1\n            q.append(v1)\n        if u % 2 == 0:\n            v2 = u // 2\n            if dist[v2] == -1:\n                dist[v2] = dist[u] + 1\n                q.append(v2)\n            v3 = (u//2 + 16384) % MOD\n            if dist[v3] == -1:\n                dist[v3] = dist[u] + 1\n                q.append(v3)\n    # Now, we output the answers for each element in arr\n    res = [str(dist[x]) for x in arr]\n    print(\" \".join(res))\n    # And then break the loop? But the loop is over s.split(), which is the same as arr.",
+      "start_char": 18371,
+      "end_char": 19508,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "We can break after the first element? No, we have to do all. But note: the for loop is over s.split(), which is the entire list. We are processing the entire list in one go. We can break after the first element? That would be wrong.",
+      "start_char": 19509,
+      "end_char": 19742,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Alternatively, we can do:\n\n    # Precomputation only once at the beginning of the program. But the program3.py is run once. So we can precompute at the beginning. But the code we are given is:\n\n    n,s=open(0)\n    for x in s.split():# TODO: Your code here\n\nWe can change the structure to:\n\n    n,s=open(0)\n    arr = list(map(int, s.split())) # Precomputation here\n    ... res = [str(dist[x]) for x in arr]\n    print(\" \".join(res)) But then we are not using the for loop. The problem says: \"Output only the missing code\". We can output the entire block that replaces the for loop? But the for loop is the main structure.",
+      "start_char": 19744,
+      "end_char": 20374,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Alternatively, we can do:\n\n    # Precomputation outside the loop, but we are not allowed to change the structure arbitrarily? But note: the problem says: \"missing lines or blocks\".",
+      "start_char": 20376,
+      "end_char": 20556,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "We can output a block that includes the precomputation and then breaks the loop by processing all at once. So the missing block for program3.py is:\n\n    #",
+      "start_char": 20559,
+      "end_char": 20713,
+      "label": "bug_fixing",
+      "label_info": {
+        "type": "bug_fixing"
+      }
+    },
+    {
+      "text": "We break out of the for loop structure by converting the entire s.split() to a list and then precomputing and then outputting. arr = list(map(int, s.split())) MOD = 32768\n    dist = [-1] * MOD\n    from collections import deque\n    q = deque([0]) dist[0] = 0\n    while q:\n        u = q.popleft()\n        v1 = (u-1) % MOD\n        if dist[v1] == -1:\n            dist[v1] = dist[u] + 1\n            q.append(v1)\n        if u % 2 == 0:\n            v2 = u // 2\n            if dist[v2] == -1:\n                dist[v2] = dist[u] + 1\n                q.append(v2)\n            v3 = (u//2 + 16384) % MOD\n            if dist[v3] == -1:\n                dist[v3] = dist[u] + 1\n                q.append(v3)\n    res = [str(dist[x]) for x in arr]\n    print(\" \".join(res))\n    # And then we break? But the for loop is over s.split(), which is the same as arr. We can break after the first element? We don't want to run the loop for each element. So we can break the loop by not iterating further? We can use a break after the first iteration? But that would be wrong. # Instead, we can do: we only run the for loop once? But the for loop is over the entire list. We can break after the first element? That would be wrong. # Alternatively, we can do: we precompute only once, and then for each x we output the answer. But we are in the loop.",
+      "start_char": 20715,
+      "end_char": 22058,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "We can do:\n\n    #   if 'dist' not in locals():\n    #       # precompute\n    #       ... and then set a flag\n    #   then for the current x, we output the answer? But the problem says: output n integers.",
+      "start_char": 22059,
+      "end_char": 22261,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "We are in the loop and we are printing one integer per iteration? But the problem says: print n integers (space separated? or one per line? the example output is one line of n integers). # The example: \"Print n integers\" meaning one line?",
+      "start_char": 22262,
+      "end_char": 22505,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "The sample input: \n    #   4\n    #   19 32764 10240 49\n    #   Output: 14 4 4 15\n\n    # So we must output one line with n integers. # Therefore, we cannot output inside the for loop per element. We must output at the end.\n\n    # So we break the for loop and output the entire list at once. # How? We can convert the for loop to build a list? But the for loop is already iterating over the tokens. We can build the list of tokens and then break? But the for loop is the only loop. # We can do:\n\n    #   tokens = list(s.split())\n    #   arr = list(map(int, tokens))\n    #   ... precomputation ...\n    #   res = [str(dist[x]) for x in arr]\n    #   print(\" \".join(res))",
+      "start_char": 22506,
+      "end_char": 23186,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "#   break   # break after the first iteration of the for loop? But the for loop is over tokens, which we just built. Then we break to avoid iterating over each token.\n\n    # But note: the for loop is: for x in s.split(): ... \n    #   We are inside the first iteration. We break after the first token? Then we would only process the first token.\n\n    # Instead, we can do:\n\n    #   tokens = s.split()\n    #   n = len(tokens)   # but we already read n from the first line? Actually, the first line is stored in variable `n`, and the second line in `s`. Then we are iterating over s.split(). # We can break out of the for loop and then process the entire list? But we are in the first iteration. # We can do:\n\n    #       arr = []\n    #       for x in s.split():\n    #           arr.append(int(x))\n    #       # then precompute and output\n    #       ... \n    #       print(\" \".join(str(dist[x]) for x in arr))\n    #       # and then break? But we are already in the loop. We break to avoid the rest of the iterations? But the loop is over the entire list. We break after the first element? That would be wrong. #   Alternatively, we can do:\n\n    #       arr = []\n    #       arr.append(int(x))   # for the current x\n    #       # then continue the loop to collect the rest?\n    #       for the rest of the tokens, we append? But the for loop will continue. # Then after the loop, we precompute and output? But the precomputation should be done only once, and we are in the loop.",
+      "start_char": 23191,
+      "end_char": 24686,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "We can do:\n\n    #       if 'dist' not in globals():\n    #           # precomputation not done, so we collect the entire list and then after the loop we do the precomputation and output.",
+      "start_char": 24694,
+      "end_char": 24879,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "#       else:\n    #           # we already have the dist array, so we can output at the end. # But the problem: we are in the loop. We cannot output after the loop because we are in the loop. # We can do:\n\n    #       arr = []\n    #       for x in s.split():\n    #           arr.append(int(x))\n    #       #",
+      "start_char": 24884,
+      "end_char": 25205,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Now, after the loop, we do the precomputation? But the loop is the entire program. # But note: the for loop is the only thing. We can do:\n\n    #       arr = [int(x) for x in s.split()]\n    #       # Precomputation\n    #       ... \n    #       print(\" \".join(str(dist[x]) for x in arr)) # and then we break out of the for loop?",
+      "start_char": 25206,
+      "end_char": 25546,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Actually, the for loop is over s.split(), which is the same as arr. We are done. # But the for loop is: for x in s.split(): ... and we are inside the first iteration. We can break after building the entire list? But we are building the entire list in the first iteration? Actually, no: the for loop will run for each token. We are in the first token. We want to build the entire list? We can do:\n\n    #       arr = []\n    #       # We are at the first token, so we append the first token, then we break out of the loop? But we need to append all. #   Alternatively, we can change the for loop to a list comprehension and then break. But that is messy.",
+      "start_char": 25547,
+      "end_char": 26210,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Given the complexity, and since the problem says the entire program3.py is provided with a missing block, we can output the entire block that replaces the TODO and the for loop? But the problem says: \"Output only the missing code\".",
+      "start_char": 26212,
+      "end_char": 26443,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Alternatively, we can precompute at the beginning of the program and then for each x, we output the answer. But we must precompute only once. We can do:\n\n    # Precomputation (if not done) at the beginning of the program? But the program3.py is:\n\n        n,s=open(0)\n        for x in s.split():# TODO: Your code here\n\n    We can do:\n\n        # Precomputation at the beginning, then in the for loop we just output the answer for x.\n\n        MOD = 32768\n        if 'dist' not in globals():\n            dist = [-1] * MOD\n            from collections import deque\n            q = deque([0] )\n            dist[0] = 0\n            while q:\n                u = q.popleft()\n                v1 = (u-1) % MOD\n                if dist[v1] == -1:\n                    dist[v1] = dist[u] + 1\n                    q.append(v1)\n                if u % 2 == 0:\n                    v2 = u // 2\n                    if dist[v2] == -1:\n                        dist[v2] = dist[u] + 1\n                        q.append(v2)\n                    v3 = (u//2 + 16384) % MOD\n                    if dist[v3] == -1:\n                        dist[v3] = dist[u] + 1\n                        q.append(v3)\n        x = int(x)\n        # But we are in the for loop, and we are printing one integer per x? But the problem says: print n integers in one line. # We cannot print in the for loop one by one with space? We can use:\n\n        #   print(str(dist[x]), end=' ')\n\n        # But then at the end of the loop, we print a newline? But the problem says: one line. # However, the sample output is: \"14 4 4 15\"\n\n        # But note: the for loop is over the entire list.",
+      "start_char": 26445,
+      "end_char": 28085,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "We can print in the loop with space and then after the loop print newline? But the problem doesn't specify newline, but the example output is one line. # We can do:\n\n        #   for i, x in enumerate(s.split()):\n        #       x = int(x)\n        #       print(dist[x], end=' ' if i < n-1 else '\\n')\n\n        # But we don't have n here?",
+      "start_char": 28086,
+      "end_char": 28431,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Actually, we have n from the first line. # But the variable `n` is the first line, and the second line has n integers.\n\n        # However, we are in the for loop over the second line. We can do:\n\n        #   tokens = s.split()\n        #   for i, x in enumerate(tokens):\n        #       x_int = int(x)\n        #       if i == len(tokens)-1:\n        #           print(dist[x_int])\n        #       else:\n        #           print(dist[x_int], end=' ')\n\n        # But we are already in the for loop. We can't nest the same loop.",
+      "start_char": 28432,
+      "end_char": 28965,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Given the complexity, and since the problem says the total n is up to 32768, and the state space is 32768, we can precompute once and then output in the loop with a space and then a newline at the end. But note: the for loop is over the tokens. We can do: if 'dist' not in globals():\n            # Precomputation\n            MOD = 32768\n            global dist\n            dist = [-1] * MOD\n            from collections import deque\n            q = deque([0])\n            dist[0] = 0\n            while q:\n                u = q.popleft()\n                v1 = (u-1) % MOD\n                if dist[v1] == -1:\n                    dist[v1] = dist[u] + 1\n                    q.append(v1)\n                if u % 2 == 0:\n                    v2 = u // 2\n                    if dist[v2] == -1:\n                        dist[v2] = dist[u] + 1\n                        q.append(v2)\n                    v3 = (u//2 + 16384) % MOD\n                    if dist[v3] == -1:\n                        dist[v3] = dist[u] + 1\n                        q.append(v3)\n        #",
+      "start_char": 28971,
+      "end_char": 30030,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Now, for the current x, convert to int and then print the dist, but with space or newline?\n        # We are in the for loop. We want to print all in one line.",
+      "start_char": 30031,
+      "end_char": 30189,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "We can print without newline and then after the loop print newline? But the problem says: output n integers in one line. # We can do: \n        #   print(dist[int(x)], end=' ')\n\n        # But then after the loop, we need to print a newline? But the problem doesn't say, but typically we output a line of n integers.\n\n        #",
+      "start_char": 30190,
+      "end_char": 30524,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "However, the sample output is one line. But the program3.py is run as part of a pipe: program1.py | program2.py | program3.py. So we must output exactly one line. # But the for loop will print each integer with a space, and then at the end of the loop, we are outside, but we haven't printed the newline. # We can do: after the for loop, print a newline. But the for loop is the only thing in the program. We can't add code after the for loop. Alternatively, we can note that the entire second line is in `s.split()`, and we are iterating over it. We can do:\n\n        tokens = s.split() if 'dist' not in globals():\n            # precompute\n            ... \n        res = [str(dist[int(x)]) for x in tokens]\n        print(\" \".join(res))\n        # and then break out of the loop? But we are in the first iteration. We can break after the first token? That would be wrong.",
+      "start_char": 30525,
+      "end_char": 31425,
+      "label": "bug_fixing",
+      "label_info": {
+        "type": "bug_fixing"
+      }
+    },
+    {
+      "text": "Given the time, and since the state space is fixed, and the input n is at most 32768, we can precompute the dist array once at the beginning of the program and then output the entire list at once. But the structure of the program is fixed. We decide to do: # Convert the entire second line to a list of integers\n        arr = list(map(int, s.split()))\n        # Precomputation\n        MOD = 32768\n        dist = [-1] * MOD\n        from collections import deque\n        q = deque([0]) dist[0] = 0\n        while q:\n            u = q.popleft()\n            v1 = (u-1) % MOD\n            if dist[v1] == -1:\n                dist[v1] = dist[u] + 1\n                q.append(v1)\n            if u % 2 == 0:\n                v2 = (u // 2) % MOD\n                if dist[v2] == -1:\n                    dist[v2] = dist[u] + 1\n                    q.append(v2)\n                v3 = (u//2 + 16384) % MOD\n                if dist[v3] == -1:\n                    dist[v3] = dist[u] + 1\n                    q.append(v3)\n        # Output the answers for all in arr\n        print(\" \".join(str(dist[x]) for x in arr))\n        #",
+      "start_char": 31431,
+      "end_char": 32553,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Now, we break out of the for loop by using a break after the first element? # But the for loop is over s.split(), which has been read entirely. We can break after the first element? \n        # We can use a flag to break after the first element:\n\n        #   if 'first' not in globals():\n        #       global first\n        #       first = True\n        #       # do the above and then break\n        #       break\n        #   else:\n        #       # This won't happen because there's only one line. #       pass\n\n    But this is messy.",
+      "start_char": 32554,
+      "end_char": 33105,
+      "label": "bug_fixing",
+      "label_info": {
+        "type": "bug_fixing"
+      }
+    },
+    {
+      "text": "Simpler: since the for loop is over the tokens in the second line, and there is only one line after the first integer, we can simply break after the first token and then output the entire list. But then we would only have the first token in the for loop variable x. This is not feasible. Therefore, we must change the for loop to a list of tokens. We can do:\n\n        tokens = s.split()\n        arr = [int(x) for x in tokens]\n        MOD = 32768\n        dist = [-1] * MOD\n        from collections import deque\n        q = deque([0]) dist[0] = 0\n        while q:\n            u = q.popleft()\n            v1 = (u-1) % MOD\n            if dist[v1] == -1:\n                dist[v1] = dist[u] + 1\n                q.append(v1)\n            if u % 2 == 0:\n                v2 = (u // 2) % MOD\n                if dist[v2] == -1:\n                    dist[v2] = dist[u] + 1\n                    q.append(v2)\n                v3 = (u//2 + 16384) % MOD\n                if dist[v3] == -1:\n                    dist[v3] = dist[u] + 1\n                    q.append(v3)\n        print(\" \".join(str(dist[x]) for x in arr))\n        break\n\n    This will break after the first iteration of the for loop, but we have processed the entire list. But note: the for loop is for x in tokens: we are in the first x. We then build `arr` = the entire list. Then we break. So the for loop will not continue for the rest of the tokens. This is acceptable. So the missing code for program3.py is:\n\n        tokens = s.split() arr = [int(x) for x in tokens]\n        MOD = 32768\n        dist = [-1] * MOD\n        from collections import deque\n        q = deque([0]) dist[0] = 0\n        while q:\n            u = q.popleft()\n            v1 = (u-1) % MOD\n            if dist[v1] == -1:\n                dist[v1] = dist[u] + 1\n                q.append(v1)\n            if u % 2 == 0:\n                v2 = (u // 2) % MOD\n                if dist[v2] == -1:\n                    dist[v2] = dist[u] + 1\n                    q.append(v2)\n                v3 = (u//2 + 16384) % MOD\n                if dist[v3] == -1:\n                    dist[v3] = dist[u] + 1\n                    q.append(v3)\n        print(\" \".join(str(dist[x]) for x in arr))\n        break\n\n But note: the // operator in Python for non-negative integers is floor division, which is what we want. However, when u is even, u//2 is an integer. But note: the modulus for v2: (u//2) % MOD -> but u//2 is in [0, 16383] so mod 32768 is the same. And v3 = (u//2 + 16384) % MOD, which is in [16384, 32767] and then mod 32768 is the same. So we can omit the mod for v2? It is not necessary, but it is safe. But in the BFS, we are using modulo arithmetic, so we do it for safety.",
+      "start_char": 33111,
+      "end_char": 35839,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "However, note that u//2 is at most 16383, and adding 16384 gives at most 32767, so mod is not changing the value. So we can skip the mod for v2 and v3? But the code has it for v2: \n\n        v2 = (u // 2) % MOD   -> not necessary, but it doesn't hurt. We'll leave it as above. But note: the sample: \n    19 -> 14\n    32764 -> 4\n    10240 -> 4\n    49 -> 15\n\n We hope the BFS gives these values. Let's do a quick check for 49: We need to find the shortest path from 49 to 0. One known solution: multiply by 2 repeatedly 15 times: \n        49 * 2^15 mod 32768 = 49 * 32768 mod 32768 = 0? But 49 * 32768 is not 0 mod 32768? Actually, 49 * 2^15 = 49 * 32768, which is 0 mod 32768. So steps: 15. But is there a shorter path? The BFS should find 15 steps. However, note: the operations are: \n    add 1 or multiply by 2. We can do: \n        49 -> 50 (1 step)\n        50 -> 25 (2 steps) [50 is even: 50/2=25]\n        25 -> 26 (3)\n        26 -> 13 (4)\n        13 -> 14 (5)\n        14 -> 7 (6)\n        7 -> 8 (7)\n        8 -> 4 (8)\n        4 -> 2 (9)\n        2 -> 1 (10)\n        1 -> 0 (11) [1+1=2, then repeatedly multiply by 2 until 0? no, wait: from 1 we can do: 1+1=2, then 2->4, ... -> 32768 mod 32768=0: that would be 1+1+14 = 16 steps, not 11. Alternatively, from 1: \n        1 -> 2 (1 step: add)\n        2 -> 4 (2)\n        ... until 16384 -> 0 ( by 16384*2 = 32768 mod 32768=0) -> total steps: 1 (for the add) + 14 (multiply) = 15. So the above path for 49 is 11 steps? Let me recount:\n\n        49->50 (1)\n        50->25 (2)\n        25->26 (3)\n        26->13 (4)\n        13->14 (5)\n        14->7 (6)\n        7->8 (7)\n        8->4 (8)\n        4->2 (9)\n        2->1 (10)\n        1->2 (11) [but then we are at 2, not 0]\n\n    This is not working. Known solution: 15 multiplications: 49 * 2^15 = 0 mod 32768, so 15 steps. The BFS should find 15. Our BFS: \n        We are going backwards from 0. How to get to 49 in reverse? In reverse, the operations are:\n            Option 1: (49+1) mod 32768 = 50, then in one more reverse step 50->25 or 50->25+16384=16409? \n            ... It's complex, but trust the BFS. We'll output the code as above. Summary of missing code:\n\nprogram1.py: \n    for x,y in b:\n        madist = max(madist, abs(x - cr) + abs(y - cc))\n\nprogram2.py:\n    dmx[pref[i]] = dp[i]\n\nprogram3.py:\n    tokens = s.split()\n    arr = [int(x) for x in tokens]\n    MOD = 32768\n    dist = [-1] * MOD\n    from collections import deque\n    q = deque([0]) dist[0] = 0\n    while q:\n        u = q.popleft()\n        v1 = (u-1) % MOD\n        if dist[v1] == -1:\n            dist[v1] = dist[u] + 1\n            q.append(v1)\n        if u % 2 == 0:\n            v2 = (u // 2) % MOD\n            if dist[v2] == -1:\n                dist[v2] = dist[u] + 1\n                q.append(v2)\n            v3 = (u//2 + 16384) % MOD\n            if dist[v3] == -1:\n                dist[v3] = dist[u] + 1\n                q.append(v3)\n    print(\" \".join(str(dist[x]) for x in arr))\n    break\n\nBut note: in program3.py, we must import deque inside the block? Yes. Now, output in JSON:\n\n{\n    \"program1\": \"for x,y in b:\\n        madist = max(madist, abs(x - cr) + abs(y - cc))\",\n    \"program2\": \"dmx[pref[i]] = dp[i]\",\n    \"program3\": \"tokens = s.split()\\n    arr = [int(x) for x in tokens]\\n    MOD = 32768\\n    dist = [-1] * MOD\\n    from collections import deque\\n    q = deque([0])\\n    dist[0] = 0\\n    while q:\\n        u = q.popleft()\\n        v1 = (u-1) % MOD\\n        if dist[v1] == -1:\\n            dist[v1] = dist[u] + 1\\n            q.append(v1)\\n        if u % 2 == 0:\\n            v2 = (u // 2) % MOD\\n            if dist[v2] == -1:\\n                dist[v2] = dist[u] + 1\\n                q.append(v2)\\n            v3 = (u//2 + 16384) % MOD\\n            if dist[v3] == -1:\\n                dist[v3] = dist[u] + 1\\n                q.append(v3)\\n    print(\\\" \\\".join(str(dist[x]) for x in arr))\\n    break\"\n}\n\nBut note: in program1.py, the code has a comment above the TODO: \n    # TODO: Your code here\n\nWe are to replace that TODO and the inner loop. The inner loop currently is:\n\n    for x,y in b:\n        # TODO: Your code here\n\nWe replace the TODO with the code. In program2.py, the TODO is:\n\n    # TODO: Your code here\n\nWe replace it with: dmx[pref[i]] = dp[i]\n\nIn program3.py, the TODO is:\n\n    for x in s.split():# TODO:",
+      "start_char": 35844,
+      "end_char": 40273,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Your code here\n\nWe replace the entire for loop's body with the block. But note: in program3.py, the for loop is:\n\n    for x in s.split():# TODO: Your code here\n\nWe are replacing the entire body of the for loop with the block above, which includes a break. This will make the for loop run only once. We output the JSON.",
+      "start_char": 40274,
+      "end_char": 40593,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    }
+  ],
+  "metadata": {
+    "task_id1": "block_completion_004377",
+    "task_id2": "block_completion_001049",
+    "task_id3": "block_completion_003352"
+  },
+  "original_reasoning": "We are given three programs with missing parts. We must output only the missing code for each program in a JSON object.\n\nFor program1.py:\nThe problem is to find a cell (a, b) that minimizes the maximum Manhattan distance to any black cell.\nThe provided code uses an approach by computing the extreme points in the transformed coordinates (i+j, i-j) and then computes candidate center (r, c) from the midpoints of these extremes.\nThen it checks a 3x3 neighborhood around (r, c) to account for integer rounding and picks the one with the smallest maximum Manhattan distance.\n\nThe missing part is inside the double loop for i in [-1,0,1] and j in [-1,0,1]. We are to compute the maximum Manhattan distance from the candidate cell (cr, cc) to all black cells. However, note that the list `b` contains all black cell coordinates.\n\nWe are to set `madist` to the maximum Manhattan distance from (cr, cc) to any black cell in `b`.\n\nSo the missing code is:\n    madist = max(madist, abs(x - cr) + abs(y - cc))\n\nBut note: we are iterating over every black cell (x,y) in `b`. We must update `madist` to be at least the distance to the current black cell.\n\nHowever, note that `madist` is initialized to 0. We can do:\n\n    madist = max(madist, abs(x - cr) + abs(y - cc))\n\nBut we must do this for every black cell.\n\nAlternatively, we can compute the maximum over the entire list. The current loop is over every black cell.\n\nSo the missing block is:\n\n    for x,y in b:\n        d = abs(x - cr) + abs(y - cc)\n        if d > madist:\n            madist = d\n\nBut note: we can also use:\n\n        madist = max(madist, abs(x - cr) + abs(y - cc))\n\nBut note: the initial `madist` is 0, so the first distance will set it. This is correct.\n\nHowever, note that the problem constraints and the fact that the total n*m <= 10^6, but the inner loop is over the black cells and we are iterating 9 times (the 3x3 neighborhood) and the total black cells over all test cases is at most 10^6, so it is acceptable.\n\nBut wait: the problem says the sum of n*m <= 10^6, so the total black cells is at most 10^6. And we are iterating 9 * (number of black cells in this test case) per test case. The total black cells over test cases is <= 10^6, so 9 * 10^6 is acceptable.\n\nSo the missing code for program1.py is:\n\n    for x,y in b:\n        d = abs(x - cr) + abs(y - cc)\n        if d > madist:\n            madist = d\n\nBut note: the code already has a line `madist = 0` before the inner loop. We can also write:\n\n        madist = max(madist, abs(x - cr) + abs(y - cc))\n\nWe'll write the latter for brevity.\n\nFor program2.py:\nThe problem is about partitioning an array to maximize the sum of values. The value of a subarray is (length) if the sum is positive, 0 if zero, and (-length) if negative.\n\nWe are given a dynamic programming solution that uses coordinate compression and two Fenwick trees (or segment trees) for maximum queries. The code already sets up:\n\n    dp = [0] * (n+1)\n    dmx = {0:0}   # but note: we have dmx[0]=0 at the beginning.\n\nThen for i from 1 to n:\n    dp[i] = max( ... )\n\nAnd then we update the Fenwick trees and the dictionary `dmx`.\n\nThe missing part is: after updating the Fenwick trees, we update `dmx` for the current prefix sum at index i.\n\nThe comment says:\n    if dp[i] > dmx.get(pref[i], -INF):\n        # TODO: Your code here\n\nWe should set `dmx[pref[i]] = dp[i]` because we want to remember the best dp value we have for the prefix sum `pref[i]` (so that in the future we can use the condition: if we see the same prefix sum again, we can use the stored dp value).\n\nBut note: the recurrence for dp[i] uses:\n    dp[i] = max( i + pfen.max(ordpos[i]),   # which corresponds to the case when the last segment has positive sum?\n                 nfen.max(n+1-ordneg[i]) - i,   # negative?\n                 dmx.get(pref[i], -INF)   # zero? because if the segment from j to i has sum=0, then we can use dp[j] and then the segment j+1..i has value 0? Actually, note: the recurrence uses the fact that if we have the same prefix sum at j and i, then the segment from j+1 to i has sum 0 -> so the value of that segment is 0, and then we can do dp[i] = dp[j] (without adding anything for the segment) but wait: the recurrence in the code uses dmx.get(pref[i]) which is set to the best dp[j] for j with the same prefix sum. Then we can set:\n\n    dmx[pref[i]] = max(dmx.get(pref[i], -INF), dp[i])\n\nBut the condition is: if dp[i] is greater than the current value for pref[i] in dmx, then we update.\n\nSo the missing code is:\n\n        dmx[pref[i]] = dp[i]\n\nBut note: the condition is already checking that dp[i] is greater than the current value. So we can simply assign.\n\nSo:\n\n        dmx[pref[i]] = dp[i]\n\nFor program3.py:\nThe problem: for each integer x in the input, we want the minimum number of operations to turn x into 0 mod 32768. The operations are: add 1 mod 32768, or multiply by 2 mod 32768.\n\nWe note that 32768 is 2^15. We can use BFS from 0 backwards? But note: the modulus is 32768, so we can precompute the minimum steps for all numbers from 0 to 32767.\n\nHowever, the input n can be up to 32768, so we can precompute an array `ans` for all residues.\n\nWe can do a BFS starting from 0 (which requires 0 steps). Then from 0, we can reverse the operations:\n\nOperation 1: (v+1) mod 32768 -> reversed: (v-1) mod 32768? But note: we are going backwards. Alternatively, we can consider:\n\n    Operation 1: from u, we can go to (u-1) mod 32768 (by reversing the add) but note: the reverse of adding 1 is subtracting 1.\n\n    Operation 2: multiplying by 2 mod 32768: the reverse is not straightforward because multiplying by 2 is not invertible? But note: we are working modulo 32768. However, we can also consider: if we have v = (2 * u) mod 32768, then u could be v/2 if v is even? But also note: because of mod, we have two possibilities: u = v/2 or u = (v+32768)/2? Actually, the reverse operation: if we have a state v, then it could have come from:\n\n        Option 1: (v-1) mod 32768   [by doing the add operation last]\n        Option 2: if v is even, then from v/2 (by doing the multiply operation last) but also note: because of mod, we can also have (v/2 + 16384) because 2*(v/2+16384) mod 32768 = v? Actually, 2*(v/2+16384) = v + 32768 mod 32768 = v. So we have two possibilities for the multiply: v/2 and v/2+16384? But wait: the operation is: u = (2 * u_prev) mod 32768. So if we have v, then u_prev must satisfy: 2 * u_prev \u2261 v (mod 32768). The solutions are: u_prev = v/2 (if v is even) and u_prev = (v+32768)/2 (if v is even? no, wait: if v is even, then v/2 is an integer, and (v+32768)/2 = v/2 + 16384, which is also an integer. But note: 32768 is even, so if v is even, then both solutions are integers. However, we are working modulo 32768, so we have two predecessors for the multiply operation: (v/2) mod 32768 and (v/2 + 16384) mod 32768? Actually, the equation 2*x \u2261 v (mod 32768) has two solutions when v is even? Actually, no: because 2 and 32768 are not coprime. The equation 2*x \u2261 v (mod 32768) has solutions only if 2 divides v. And then the solutions are x \u2261 v/2 (mod 16384). But wait, the modulus is 32768, so the solutions are x = v/2 + k * 16384 for k=0,1? Because the step is 32768/ gcd(2,32768)=32768/2=16384. So yes, two solutions: v/2 and v/2+16384.\n\nBut note: we are in the range [0,32767]. So we have two possibilities: \n    u1 = v // 2\n    u2 = (v // 2) + 16384\n\nBut only if v is even.\n\nSo the BFS:\n\n    Let dist[0] = 0.\n    Queue starts with 0.\n\n    For each node u popped from the queue:\n        Consider two reverse operations:\n\n        Reverse of add: (u-1) mod 32768 -> but if u==0, then (0-1) mod 32768 = 32767. We can do: v = (u-1) % 32768. If we haven't visited v, then dist[v] = dist[u] + 1, and push v.\n\n        Reverse of multiply: only if u is even? Actually, no: we can only reverse the multiply operation if u is even? But note: the equation 2*x \u2261 u (mod 32768) requires u to be even. So if u is even, then we have two predecessors: \n            v1 = u // 2\n            v2 = (u // 2) + 16384   (and then mod 32768? but note: if u//2 + 16384 is in the range [0,32767] so we don't need mod? but we can mod 32768 to be safe)\n\n        Then if we haven't visited v1 or v2, we update.\n\nHowever, note: the problem asks for the minimum number of operations to make a_i equal to 0. We are going backwards from 0 to a_i? Actually, we are building the distances from 0 to every state. Then for each a_i, we output dist[a_i].\n\nBut note: the modulus is 32768, so we are working in a circle of 32768 states.\n\nBut the constraints: n up to 32768, and we have 32768 states. So we can precompute the entire array `dist` for all states.\n\nHowever, the provided code does not precompute. It reads:\n\n    n,s=open(0)\n    for x in s.split():\n        # TODO: Your code here\n\nWe must output for each x the minimum number of operations.\n\nWe can precompute the `dist` array for all residues from 0 to 32767. Then for each x, we output dist[x].\n\nBut note: the modulus is 32768, and the states are 0..32767.\n\nSteps for precomputation:\n\n    dist = [-1] * 32768\n    from collections import deque\n    q = deque()\n    dist[0] = 0\n    q.append(0)\n\n    while q:\n        u = q.popleft()\n        # Reverse add: (u-1) mod 32768\n        v1 = (u - 1) % 32768\n        if dist[v1] == -1:\n            dist[v1] = dist[u] + 1\n            q.append(v1)\n\n        # Reverse multiply: if u is even, then two predecessors\n        if u % 2 == 0:\n            v2 = (u // 2) % 32768\n            if dist[v2] == -1:\n                dist[v2] = dist[u] + 1\n                q.append(v2)\n            v3 = (u // 2 + 16384) % 32768\n            if dist[v3] == -1:\n                dist[v3] = dist[u] + 1\n                q.append(v3)\n\nBut wait: is that correct? The reverse of the multiply operation: we have two possibilities. However, note that the two possibilities are distinct? For example, if u=0, then we get v2=0 and v3=16384. Then we set dist[0] is already 0, so we skip. Then we set dist[16384]=1.\n\nBut then from 16384, we can do:\n    Reverse add: 16383 -> set to 2.\n    Reverse multiply: 16384 is even -> then we get 8192 and 8192+16384=24576.\n\nSo we need to do both.\n\nBut note: the above BFS might not be optimal because we are doing two different reverse operations for the multiply? Actually, we are correctly generating the two predecessors.\n\nHowever, we must note that the state space is 32768, and we are doing BFS so we get the minimum steps.\n\nBut the problem: the operations are reversible? Actually, we are building the reverse graph: an edge from u to v means that from v we can get to u in one operation. Then the distance from 0 to v is the same as the distance from v to 0 in the original graph? Yes, because the graph is undirected? Actually, no: the operations are directed. But we are building the reverse graph. The reverse graph edges are:\n\n    Edge1: from u to (u-1) mod 32768: which corresponds to the original operation: from (u-1) mod 32768 we can do an add to get u.\n    Edge2: from u to u/2 mod 32768: which corresponds to the original operation: from u/2 we can multiply to get u (if we are at u/2, then multiply by 2 gives u mod 32768) -> but note: we have two possibilities? Actually, no: the original operation from u/2: multiply by 2 gives u. Similarly, from u/2+16384: multiply by 2 gives (u + 32768) mod 32768 = u.\n\nSo the reverse graph has two types of edges: \n    Type1: from u to (u-1) mod 32768 (with weight 1) \n    Type2: from u to (u/2) mod 32768 and to (u/2+16384) mod 32768 (if u is even) (with weight 1)\n\nBut note: the reverse of the multiply operation gives two predecessors only when u is even.\n\nSo the BFS above is correct.\n\nBut note: the modulus operation: (u-1) % 32768: if u=0, then (0-1) % 32768 = 32767.\n\nWe must precompute the entire `dist` array for all residues.\n\nBut the provided code does not precompute. We must add the precomputation? However, the problem says: \"Output only the missing lines or blocks\". The code in program3.py is:\n\n    n,s=open(0)\n    for x in s.split():# TODO: Your code here\n\nWe are to output the answer for each x. We can precompute the `dist` array and then for each x, output dist[x]. But note: the precomputation must be done once at the beginning.\n\nSo the missing code is:\n\n    Precomputation for all residues (if we haven't done it, we do it once) and then for each x, we output the precomputed value.\n\nBut note: the modulus is 32768, and the numbers are in [0, 32767]. We can precompute the entire array.\n\nHow to do:\n\n    We do a BFS as above. Then we split the input string s, convert each to integer, and then output the dist for that integer.\n\nBut note: the input is:\n\n    n = first line, then the second line has n integers.\n\nWe can do:\n\n    n = int(n)\n    a = list(map(int, s.split()))\n\n    # Precomputation for all residues (if we haven't done it, but we can do it once at the start of the program)\n\nBut the problem: the program3.py is run once per test? Actually, the problem says: the first line is n, then the next line has n integers. So we can precompute the dist array at the beginning.\n\nBut note: the modulus is fixed (32768) and the state space is fixed. So we precompute once.\n\nSo the code:\n\n    n = int(n)\n    a = list(map(int, s.split()))\n\n    # Precomputation\n    MOD = 32768\n    dist = [-1] * MOD\n    from collections import deque\n    q = deque()\n    dist[0] = 0\n    q.append(0)\n    while q:\n        u = q.popleft()\n        # Reverse of add: (u-1) mod MOD\n        v1 = (u - 1) % MOD\n        if dist[v1] == -1:\n            dist[v1] = dist[u] + 1\n            q.append(v1)\n        # Reverse of multiply: two predecessors if u is even\n        if u % 2 == 0:\n            v2 = (u // 2) % MOD\n            if dist[v2] == -1:\n                dist[v2] = dist[u] + 1\n                q.append(v2)\n            v3 = (u // 2 + 16384) % MOD\n            if dist[v3] == -1:\n                dist[v3] = dist[u] + 1\n                q.append(v3)\n\n    # Then for each x in a, output dist[x]\n    # But the problem says: output n integers, space separated?\n    # We can output: \" \".join(str(dist[x]) for x in a)\n\nBut note: the problem says: \"Print n integers. The i-th integer should be equal to the minimum number of operations required to make a_i equal to 0.\"\n\nSo we can do:\n\n    print(\" \".join(str(dist[x]) for x in a))\n\nBut the code is written as:\n\n    for x in s.split():\n        # TODO: Your code here\n\nWe must output the answer for each x. We can do:\n\n    res = []\n    for x in s.split():\n        x = int(x)\n        res.append(str(dist[x]))\n    print(\" \".join(res))\n\nBut note: we must precompute the dist array only once, not for each x.\n\nSo the entire missing block is:\n\n    Precomputation for the entire state space, then process the integers.\n\nBut note: the program3.py code is:\n\n    n,s=open(0)\n    for x in s.split():# TODO: Your code here\n\nWe cannot change the structure arbitrarily? We must fill in the TODO.\n\nAlternatively, we can restructure the code. But the problem says: \"Output only the missing lines or blocks\". We can output the entire block that replaces the TODO.\n\nBut note: the TODO is inside the loop. However, we cannot precompute inside the loop for each x. So we must move the precomputation outside the loop.\n\nWe can restructure:\n\n    n = int(n.strip())\n    a = list(map(int, s.split()))\n    # Precomputation for dist for all residues\n    MOD = 32768\n    dist = [-1] * MOD\n    from collections import deque\n    q = deque()\n    dist[0] = 0\n    q.append(0)\n    while q:\n        u = q.popleft()\n        v1 = (u-1) % MOD\n        if dist[v1] == -1:\n            dist[v1] = dist[u] + 1\n            q.append(v1)\n        if u % 2 == 0:\n            v2 = u//2\n            if dist[v2] == -1:\n                dist[v2] = dist[u] + 1\n                q.append(v2)\n            v3 = (u//2 + 16384) % MOD\n            if dist[v3] == -1:\n                dist[v3] = dist[u] + 1\n                q.append(v3)\n    # Now, we output the answers for each element in a\n    # But the for loop is over s.split(), which is the same as a.\n    # We can break out of the for loop? Actually, we don't want to run the precomputation for each x.\n\nSo we must restructure the code. The problem says: \"Output only the missing code\". We can output the entire code for program3.py? But the problem says: \"Output only the missing lines or blocks\".\n\nAlternatively, we can do:\n\n    Precomputation outside the loop, and then inside the loop we just collect the answers? But the for loop is written to iterate over s.split(). We can break the loop and then output the entire list? But the structure is:\n\n    for x in s.split():\n        # TODO\n\nWe can do:\n\n    # Precomputation (if we haven't done it) - but we must do it once. We can do it before the loop? But the for loop is the only loop.\n\n    # We can convert the entire s.split() to a list and then break out of the for loop? Actually, we can change the code.\n\nBut note: the problem says: \"Output the missing code, NOT as markdown code. Do NOT output the entire program or explanations or any additional information.\"\n\nWe are to output the missing code for program3.py as a string in the JSON.\n\nWe can write:\n\n    MOD = 32768\n    dist = [-1] * MOD\n    from collections import deque\n    q = deque([0])\n    dist[0] = 0\n    while q:\n        u = q.popleft()\n        v1 = (u-1) % MOD\n        if dist[v1] == -1:\n            dist[v1] = dist[u] + 1\n            q.append(v1)\n        if u % 2 == 0:\n            v2 = u // 2\n            if dist[v2] == -1:\n                dist[v2] = dist[u] + 1\n                q.append(v2)\n            v3 = (u // 2 + 16384) % MOD\n            if dist[v3] == -1:\n                dist[v3] = dist[u] + 1\n                q.append(v3)\n    # Now, we break the for loop and output the answers for all x in the list we built from s.split()\n    # But note: the for loop is already iterating over s.split(). We can break after the first iteration? No.\n\nAlternatively, we can restructure the entire program. But the problem says: we are to fill in the missing lines or blocks.\n\nGiven the structure, we must precompute the dist array once, and then for each x in the list, we output dist[int(x)].\n\nBut the for loop is:\n\n    for x in s.split():\n\nWe can do:\n\n    # Precomputation must be done once, so we do it before the loop? But we are inside the loop? \n\nWe can do:\n\n    # We can check if we haven't precomputed, then precompute. But the for loop runs for each number. We can precompute at the first iteration and then break? Then for the rest, we just use the precomputed dist.\n\nBut note: the entire list s.split() is the second line. We can convert the entire list to integers and then output the answers at once.\n\nSo we can do:\n\n    # Convert the entire s.split() to a list of integers\n    arr = list(map(int, s.split()))\n    # Precomputation\n    MOD = 32768\n    dist = [-1] * MOD\n    from collections import deque\n    q = deque()\n    dist[0] = 0\n    q.append(0)\n    while q:\n        u = q.popleft()\n        v1 = (u-1) % MOD\n        if dist[v1] == -1:\n            dist[v1] = dist[u] + 1\n            q.append(v1)\n        if u % 2 == 0:\n            v2 = u // 2\n            if dist[v2] == -1:\n                dist[v2] = dist[u] + 1\n                q.append(v2)\n            v3 = (u//2 + 16384) % MOD\n            if dist[v3] == -1:\n                dist[v3] = dist[u] + 1\n                q.append(v3)\n    # Now, we output the answers for each element in arr\n    res = [str(dist[x]) for x in arr]\n    print(\" \".join(res))\n    # And then break the loop? But the loop is over s.split(), which is the same as arr. We can break after the first element? No, we have to do all.\n\nBut note: the for loop is over s.split(), which is the entire list. We are processing the entire list in one go. We can break after the first element? That would be wrong.\n\nAlternatively, we can do:\n\n    # Precomputation only once at the beginning of the program. But the program3.py is run once. So we can precompute at the beginning.\n\nBut the code we are given is:\n\n    n,s=open(0)\n    for x in s.split():# TODO: Your code here\n\nWe can change the structure to:\n\n    n,s=open(0)\n    arr = list(map(int, s.split()))\n    # Precomputation here\n    ... \n    res = [str(dist[x]) for x in arr]\n    print(\" \".join(res))\n\nBut then we are not using the for loop. The problem says: \"Output only the missing code\". We can output the entire block that replaces the for loop? But the for loop is the main structure.\n\nAlternatively, we can do:\n\n    # Precomputation outside the loop, but we are not allowed to change the structure arbitrarily? \n\nBut note: the problem says: \"missing lines or blocks\". We can output a block that includes the precomputation and then breaks the loop by processing all at once.\n\nSo the missing block for program3.py is:\n\n    # We break out of the for loop structure by converting the entire s.split() to a list and then precomputing and then outputting.\n\n    arr = list(map(int, s.split()))\n    MOD = 32768\n    dist = [-1] * MOD\n    from collections import deque\n    q = deque([0])\n    dist[0] = 0\n    while q:\n        u = q.popleft()\n        v1 = (u-1) % MOD\n        if dist[v1] == -1:\n            dist[v1] = dist[u] + 1\n            q.append(v1)\n        if u % 2 == 0:\n            v2 = u // 2\n            if dist[v2] == -1:\n                dist[v2] = dist[u] + 1\n                q.append(v2)\n            v3 = (u//2 + 16384) % MOD\n            if dist[v3] == -1:\n                dist[v3] = dist[u] + 1\n                q.append(v3)\n    res = [str(dist[x]) for x in arr]\n    print(\" \".join(res))\n    # And then we break? But the for loop is over s.split(), which is the same as arr. We can break after the first element? We don't want to run the loop for each element. So we can break the loop by not iterating further? We can use a break after the first iteration? But that would be wrong.\n\n    # Instead, we can do: we only run the for loop once? But the for loop is over the entire list. We can break after the first element? That would be wrong.\n\n    # Alternatively, we can do: we precompute only once, and then for each x we output the answer. But we are in the loop. We can do:\n\n    #   if 'dist' not in locals():\n    #       # precompute\n    #       ... and then set a flag\n    #   then for the current x, we output the answer? But the problem says: output n integers. We are in the loop and we are printing one integer per iteration? But the problem says: print n integers (space separated? or one per line? the example output is one line of n integers).\n\n    # The example: \"Print n integers\" meaning one line? The sample input: \n    #   4\n    #   19 32764 10240 49\n    #   Output: 14 4 4 15\n\n    # So we must output one line with n integers.\n\n    # Therefore, we cannot output inside the for loop per element. We must output at the end.\n\n    # So we break the for loop and output the entire list at once.\n\n    # How? We can convert the for loop to build a list? But the for loop is already iterating over the tokens. We can build the list of tokens and then break? But the for loop is the only loop.\n\n    # We can do:\n\n    #   tokens = list(s.split())\n    #   arr = list(map(int, tokens))\n    #   ... precomputation ...\n    #   res = [str(dist[x]) for x in arr]\n    #   print(\" \".join(res))\n    #   break   # break after the first iteration of the for loop? But the for loop is over tokens, which we just built. Then we break to avoid iterating over each token.\n\n    # But note: the for loop is: for x in s.split(): ... \n    #   We are inside the first iteration. We break after the first token? Then we would only process the first token.\n\n    # Instead, we can do:\n\n    #   tokens = s.split()\n    #   n = len(tokens)   # but we already read n from the first line? Actually, the first line is stored in variable `n`, and the second line in `s`. Then we are iterating over s.split().\n\n    #   We can break out of the for loop and then process the entire list? But we are in the first iteration.\n\n    #   We can do:\n\n    #       arr = []\n    #       for x in s.split():\n    #           arr.append(int(x))\n    #       # then precompute and output\n    #       ... \n    #       print(\" \".join(str(dist[x]) for x in arr))\n    #       # and then break? But we are already in the loop. We break to avoid the rest of the iterations? But the loop is over the entire list. We break after the first element? That would be wrong.\n\n    #   Alternatively, we can do:\n\n    #       arr = []\n    #       arr.append(int(x))   # for the current x\n    #       # then continue the loop to collect the rest?\n    #       for the rest of the tokens, we append? But the for loop will continue.\n\n    #   Then after the loop, we precompute and output? But the precomputation should be done only once, and we are in the loop. We can do:\n\n    #       if 'dist' not in globals():\n    #           # precomputation not done, so we collect the entire list and then after the loop we do the precomputation and output.\n    #       else:\n    #           # we already have the dist array, so we can output at the end.\n\n    #   But the problem: we are in the loop. We cannot output after the loop because we are in the loop.\n\n    #   We can do:\n\n    #       arr = []\n    #       for x in s.split():\n    #           arr.append(int(x))\n    #       # Now, after the loop, we do the precomputation? But the loop is the entire program.\n\n    #   But note: the for loop is the only thing. We can do:\n\n    #       arr = [int(x) for x in s.split()]\n    #       # Precomputation\n    #       ... \n    #       print(\" \".join(str(dist[x]) for x in arr))\n\n    #   and then we break out of the for loop? Actually, the for loop is over s.split(), which is the same as arr. We are done.\n\n    #   But the for loop is: for x in s.split(): ... and we are inside the first iteration. We can break after building the entire list? But we are building the entire list in the first iteration? Actually, no: the for loop will run for each token. We are in the first token. We want to build the entire list? We can do:\n\n    #       arr = []\n    #       # We are at the first token, so we append the first token, then we break out of the loop? But we need to append all.\n\n    #   Alternatively, we can change the for loop to a list comprehension and then break. But that is messy.\n\nGiven the complexity, and since the problem says the entire program3.py is provided with a missing block, we can output the entire block that replaces the TODO and the for loop? But the problem says: \"Output only the missing code\".\n\nAlternatively, we can precompute at the beginning of the program and then for each x, we output the answer. But we must precompute only once.\n\nWe can do:\n\n    # Precomputation (if not done) at the beginning of the program? But the program3.py is:\n\n        n,s=open(0)\n        for x in s.split():# TODO: Your code here\n\n    We can do:\n\n        # Precomputation at the beginning, then in the for loop we just output the answer for x.\n\n        MOD = 32768\n        if 'dist' not in globals():\n            dist = [-1] * MOD\n            from collections import deque\n            q = deque([0])\n            dist[0] = 0\n            while q:\n                u = q.popleft()\n                v1 = (u-1) % MOD\n                if dist[v1] == -1:\n                    dist[v1] = dist[u] + 1\n                    q.append(v1)\n                if u % 2 == 0:\n                    v2 = u // 2\n                    if dist[v2] == -1:\n                        dist[v2] = dist[u] + 1\n                        q.append(v2)\n                    v3 = (u//2 + 16384) % MOD\n                    if dist[v3] == -1:\n                        dist[v3] = dist[u] + 1\n                        q.append(v3)\n        x = int(x)\n        # But we are in the for loop, and we are printing one integer per x? But the problem says: print n integers in one line.\n\n        # We cannot print in the for loop one by one with space? We can use:\n\n        #   print(str(dist[x]), end=' ')\n\n        # But then at the end of the loop, we print a newline? But the problem says: one line.\n\n        # However, the sample output is: \"14 4 4 15\"\n\n        # But note: the for loop is over the entire list. We can print in the loop with space and then after the loop print newline? But the problem doesn't specify newline, but the example output is one line.\n\n        # We can do:\n\n        #   for i, x in enumerate(s.split()):\n        #       x = int(x)\n        #       print(dist[x], end=' ' if i < n-1 else '\\n')\n\n        # But we don't have n here? Actually, we have n from the first line.\n\n        # But the variable `n` is the first line, and the second line has n integers.\n\n        # However, we are in the for loop over the second line. We can do:\n\n        #   tokens = s.split()\n        #   for i, x in enumerate(tokens):\n        #       x_int = int(x)\n        #       if i == len(tokens)-1:\n        #           print(dist[x_int])\n        #       else:\n        #           print(dist[x_int], end=' ')\n\n        # But we are already in the for loop. We can't nest the same loop.\n\n    Given the complexity, and since the problem says the total n is up to 32768, and the state space is 32768, we can precompute once and then output in the loop with a space and then a newline at the end.\n\n    But note: the for loop is over the tokens. We can do:\n\n        if 'dist' not in globals():\n            # Precomputation\n            MOD = 32768\n            global dist\n            dist = [-1] * MOD\n            from collections import deque\n            q = deque([0])\n            dist[0] = 0\n            while q:\n                u = q.popleft()\n                v1 = (u-1) % MOD\n                if dist[v1] == -1:\n                    dist[v1] = dist[u] + 1\n                    q.append(v1)\n                if u % 2 == 0:\n                    v2 = u // 2\n                    if dist[v2] == -1:\n                        dist[v2] = dist[u] + 1\n                        q.append(v2)\n                    v3 = (u//2 + 16384) % MOD\n                    if dist[v3] == -1:\n                        dist[v3] = dist[u] + 1\n                        q.append(v3)\n        # Now, for the current x, convert to int and then print the dist, but with space or newline?\n        # We are in the for loop. We want to print all in one line. We can print without newline and then after the loop print newline? But the problem says: output n integers in one line.\n\n        # We can do: \n        #   print(dist[int(x)], end=' ')\n\n        # But then after the loop, we need to print a newline? But the problem doesn't say, but typically we output a line of n integers.\n\n        # However, the sample output is one line. But the program3.py is run as part of a pipe: program1.py | program2.py | program3.py. So we must output exactly one line.\n\n        # But the for loop will print each integer with a space, and then at the end of the loop, we are outside, but we haven't printed the newline.\n\n        # We can do: after the for loop, print a newline. But the for loop is the only thing in the program. We can't add code after the for loop.\n\n    Alternatively, we can note that the entire second line is in `s.split()`, and we are iterating over it. We can do:\n\n        tokens = s.split()\n        if 'dist' not in globals():\n            # precompute\n            ... \n        res = [str(dist[int(x)]) for x in tokens]\n        print(\" \".join(res))\n        # and then break out of the loop? But we are in the first iteration. We can break after the first token? That would be wrong.\n\n    Given the time, and since the state space is fixed, and the input n is at most 32768, we can precompute the dist array once at the beginning of the program and then output the entire list at once. But the structure of the program is fixed.\n\n    We decide to do:\n\n        # Convert the entire second line to a list of integers\n        arr = list(map(int, s.split()))\n        # Precomputation\n        MOD = 32768\n        dist = [-1] * MOD\n        from collections import deque\n        q = deque([0])\n        dist[0] = 0\n        while q:\n            u = q.popleft()\n            v1 = (u-1) % MOD\n            if dist[v1] == -1:\n                dist[v1] = dist[u] + 1\n                q.append(v1)\n            if u % 2 == 0:\n                v2 = (u // 2) % MOD\n                if dist[v2] == -1:\n                    dist[v2] = dist[u] + 1\n                    q.append(v2)\n                v3 = (u//2 + 16384) % MOD\n                if dist[v3] == -1:\n                    dist[v3] = dist[u] + 1\n                    q.append(v3)\n        # Output the answers for all in arr\n        print(\" \".join(str(dist[x]) for x in arr))\n        # Now, we break out of the for loop by using a break after the first element? \n        # But the for loop is over s.split(), which has been read entirely. We can break after the first element? \n        # We can use a flag to break after the first element:\n\n        #   if 'first' not in globals():\n        #       global first\n        #       first = True\n        #       # do the above and then break\n        #       break\n        #   else:\n        #       # This won't happen because there's only one line.\n        #       pass\n\n    But this is messy.\n\n    Simpler: since the for loop is over the tokens in the second line, and there is only one line after the first integer, we can simply break after the first token and then output the entire list. But then we would only have the first token in the for loop variable x.\n\n    This is not feasible.\n\n    Therefore, we must change the for loop to a list of tokens. We can do:\n\n        tokens = s.split()\n        arr = [int(x) for x in tokens]\n        MOD = 32768\n        dist = [-1] * MOD\n        from collections import deque\n        q = deque([0])\n        dist[0] = 0\n        while q:\n            u = q.popleft()\n            v1 = (u-1) % MOD\n            if dist[v1] == -1:\n                dist[v1] = dist[u] + 1\n                q.append(v1)\n            if u % 2 == 0:\n                v2 = (u // 2) % MOD\n                if dist[v2] == -1:\n                    dist[v2] = dist[u] + 1\n                    q.append(v2)\n                v3 = (u//2 + 16384) % MOD\n                if dist[v3] == -1:\n                    dist[v3] = dist[u] + 1\n                    q.append(v3)\n        print(\" \".join(str(dist[x]) for x in arr))\n        break\n\n    This will break after the first iteration of the for loop, but we have processed the entire list.\n\n    But note: the for loop is for x in tokens: we are in the first x. We then build `arr` = the entire list. Then we break. So the for loop will not continue for the rest of the tokens. This is acceptable.\n\n    So the missing code for program3.py is:\n\n        tokens = s.split()\n        arr = [int(x) for x in tokens]\n        MOD = 32768\n        dist = [-1] * MOD\n        from collections import deque\n        q = deque([0])\n        dist[0] = 0\n        while q:\n            u = q.popleft()\n            v1 = (u-1) % MOD\n            if dist[v1] == -1:\n                dist[v1] = dist[u] + 1\n                q.append(v1)\n            if u % 2 == 0:\n                v2 = (u // 2) % MOD\n                if dist[v2] == -1:\n                    dist[v2] = dist[u] + 1\n                    q.append(v2)\n                v3 = (u//2 + 16384) % MOD\n                if dist[v3] == -1:\n                    dist[v3] = dist[u] + 1\n                    q.append(v3)\n        print(\" \".join(str(dist[x]) for x in arr))\n        break\n\n But note: the // operator in Python for non-negative integers is floor division, which is what we want.\n\n However, when u is even, u//2 is an integer.\n\n But note: the modulus for v2: (u//2) % MOD -> but u//2 is in [0, 16383] so mod 32768 is the same.\n\n And v3 = (u//2 + 16384) % MOD, which is in [16384, 32767] and then mod 32768 is the same.\n\n So we can omit the mod for v2? It is not necessary, but it is safe.\n\n But in the BFS, we are using modulo arithmetic, so we do it for safety.\n\n However, note that u//2 is at most 16383, and adding 16384 gives at most 32767, so mod is not changing the value. So we can skip the mod for v2 and v3? But the code has it for v2: \n\n        v2 = (u // 2) % MOD   -> not necessary, but it doesn't hurt.\n\n We'll leave it as above.\n\n But note: the sample: \n    19 -> 14\n    32764 -> 4\n    10240 -> 4\n    49 -> 15\n\n We hope the BFS gives these values.\n\n Let's do a quick check for 49: \n    We need to find the shortest path from 49 to 0.\n\n    One known solution: multiply by 2 repeatedly 15 times: \n        49 * 2^15 mod 32768 = 49 * 32768 mod 32768 = 0? \n        But 49 * 32768 is not 0 mod 32768? \n\n    Actually, 49 * 2^15 = 49 * 32768, which is 0 mod 32768.\n\n    So steps: 15.\n\n    But is there a shorter path? \n\n    The BFS should find 15 steps.\n\n However, note: the operations are: \n    add 1 or multiply by 2.\n\n    We can do: \n        49 -> 50 (1 step)\n        50 -> 25 (2 steps)   [50 is even: 50/2=25]\n        25 -> 26 (3)\n        26 -> 13 (4)\n        13 -> 14 (5)\n        14 -> 7 (6)\n        7 -> 8 (7)\n        8 -> 4 (8)\n        4 -> 2 (9)\n        2 -> 1 (10)\n        1 -> 0 (11)   [1+1=2, then repeatedly multiply by 2 until 0? no, wait: from 1 we can do: 1+1=2, then 2->4, ... -> 32768 mod 32768=0: that would be 1+1+14 = 16 steps, not 11.\n\n    Alternatively, from 1: \n        1 -> 2 (1 step: add)\n        2 -> 4 (2)\n        ... until 16384 -> 0 ( by 16384*2 = 32768 mod 32768=0) -> total steps: 1 (for the add) + 14 (multiply) = 15.\n\n    So the above path for 49 is 11 steps? Let me recount:\n\n        49->50 (1)\n        50->25 (2)\n        25->26 (3)\n        26->13 (4)\n        13->14 (5)\n        14->7 (6)\n        7->8 (7)\n        8->4 (8)\n        4->2 (9)\n        2->1 (10)\n        1->2 (11)   [but then we are at 2, not 0]\n\n    This is not working.\n\n    Known solution: 15 multiplications: 49 * 2^15 = 0 mod 32768, so 15 steps.\n\n    The BFS should find 15.\n\n    Our BFS: \n        We are going backwards from 0. \n        How to get to 49 in reverse? \n        In reverse, the operations are:\n            Option 1: (49+1) mod 32768 = 50, then in one more reverse step 50->25 or 50->25+16384=16409? \n            ...\n\n        It's complex, but trust the BFS.\n\n    We'll output the code as above.\n\nSummary of missing code:\n\nprogram1.py: \n    for x,y in b:\n        madist = max(madist, abs(x - cr) + abs(y - cc))\n\nprogram2.py:\n    dmx[pref[i]] = dp[i]\n\nprogram3.py:\n    tokens = s.split()\n    arr = [int(x) for x in tokens]\n    MOD = 32768\n    dist = [-1] * MOD\n    from collections import deque\n    q = deque([0])\n    dist[0] = 0\n    while q:\n        u = q.popleft()\n        v1 = (u-1) % MOD\n        if dist[v1] == -1:\n            dist[v1] = dist[u] + 1\n            q.append(v1)\n        if u % 2 == 0:\n            v2 = (u // 2) % MOD\n            if dist[v2] == -1:\n                dist[v2] = dist[u] + 1\n                q.append(v2)\n            v3 = (u//2 + 16384) % MOD\n            if dist[v3] == -1:\n                dist[v3] = dist[u] + 1\n                q.append(v3)\n    print(\" \".join(str(dist[x]) for x in arr))\n    break\n\nBut note: in program3.py, we must import deque inside the block? Yes.\n\nNow, output in JSON:\n\n{\n    \"program1\": \"for x,y in b:\\n        madist = max(madist, abs(x - cr) + abs(y - cc))\",\n    \"program2\": \"dmx[pref[i]] = dp[i]\",\n    \"program3\": \"tokens = s.split()\\n    arr = [int(x) for x in tokens]\\n    MOD = 32768\\n    dist = [-1] * MOD\\n    from collections import deque\\n    q = deque([0])\\n    dist[0] = 0\\n    while q:\\n        u = q.popleft()\\n        v1 = (u-1) % MOD\\n        if dist[v1] == -1:\\n            dist[v1] = dist[u] + 1\\n            q.append(v1)\\n        if u % 2 == 0:\\n            v2 = (u // 2) % MOD\\n            if dist[v2] == -1:\\n                dist[v2] = dist[u] + 1\\n                q.append(v2)\\n            v3 = (u//2 + 16384) % MOD\\n            if dist[v3] == -1:\\n                dist[v3] = dist[u] + 1\\n                q.append(v3)\\n    print(\\\" \\\".join(str(dist[x]) for x in arr))\\n    break\"\n}\n\nBut note: in program1.py, the code has a comment above the TODO: \n    # TODO: Your code here\n\nWe are to replace that TODO and the inner loop. The inner loop currently is:\n\n    for x,y in b:\n        # TODO: Your code here\n\nWe replace the TODO with the code.\n\nIn program2.py, the TODO is:\n\n    # TODO: Your code here\n\nWe replace it with: dmx[pref[i]] = dp[i]\n\nIn program3.py, the TODO is:\n\n    for x in s.split():# TODO: Your code here\n\nWe replace the entire for loop's body with the block.\n\nBut note: in program3.py, the for loop is:\n\n    for x in s.split():# TODO: Your code here\n\nWe are replacing the entire body of the for loop with the block above, which includes a break. This will make the for loop run only once.\n\nWe output the JSON."
+}

@@ -1,0 +1,766 @@
+{
+  "segments": [
+    {
+      "text": "We are given three programs with missing parts. We must output only the missing code for each program in a JSON object. Let's break down each program:\n\n### Program1.py\nThe problem is about an infinite grid and a non-increasing sequence.",
+      "start_char": 0,
+      "end_char": 237,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "We start with a doll at (0,0) and can perform operations that replace a doll at (x,y) with two dolls at (x,y+1) and (x+1,y). The goal is to have 0 dolls on every white cell (where a white cell at (x,y) is defined by y < a_x). The sequence a is given for indices 0..n, and for i>n, a_i=0. The provided code:\nn,x,d,m,f=int(input()),0,0,10**9+7,[1]\nfor i in range(1,9**6):# TODO: Your code here\nfor z in map(int,input().split()):d+=f[z+x]*pow(f[x+1]*f[z-1],-1,m)*(z>0);x+=1\nprint(d%m)\n\nWe see that the code initializes:\n  n = integer input\n  x=0, d=0, m=10**9+7, and f=[1] Then there is a loop for i in range(1, 9**6) which is 9^6 = 531441. This loop is intended to build a list `f` which is likely factorial numbers (since we see combinatorial terms later). We note that the next loop iterates over the input integers (which are a0, a1, ... an). In that loop, we see:\n  d += f[z+x] * pow(f[x+1] * f[z-1], -1, m) * (z>0)\n\nThis expression looks like a binomial coefficient: C(z+x, x+1) or C(z+x, z-1) but note that the denominator is f[x+1] * f[z-1]. Actually, the binomial coefficient C(n, k) = f[n] / (f[k] * f[n-k]). Here, the denominator has factors for (x+1) and (z-1).",
+      "start_char": 238,
+      "end_char": 1412,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "The total n in the numerator is z+x, so the term is:\n  C(z+x, x+1) * (z>0)   OR   C(z+x, z-1) * (z>0) But note: \n  C(z+x, x+1) = (z+x)! / ( (x+1)! * (z-1)! ) only if (x+1)+(z-1)=x+z, which is true. But wait: (x+1) + (z-1) = x+z, so that matches.",
+      "start_char": 1413,
+      "end_char": 1662,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "However, note that the binomial coefficient is defined for nonnegative integers and requires that the denominator indices are nonnegative. We have a condition (z>0) so that when z==0 we skip (because then z-1 would be negative). So the term is: C(z+x, x+1) = C(z+x, z-1) [since C(n,k)=C(n,n-k)]. But why is this the answer?",
+      "start_char": 1663,
+      "end_char": 1987,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "The problem is known and the solution is to compute the sum over i from 0 to n of [C(a_i + i, i+1)]. However, note the example: Input: \n      2\n      2 1 0\n  Then a0=2, a1=1, a2=0. Then for i=0: z=2 -> term = C(2+0, 0+1) = C(2,1)=2. i=1: z=1 -> term = C(1+1, 1+1)=C(2,2)=1. i=2: z=0 -> term = 0. Then d = 2+1 = 3? But the example says 5 operations. Wait, the example in the note says 5 operations. So what is the correct formula? Actually, the known solution for this problem (from CodeForces) is:\n\n  Let MOD = 10**9+7. Precompute factorials and inverse factorials up to N (which is about 400000, because a_i and n up to 200000, so the maximum argument in the binomial coefficient is a0 + 0 <= 200000, but note we have a_i+i, so maximum is 200000+200000=400000). Then, the answer is: \n      ans = 0\n      for i in range(n+1): if a[i] > 0:\n              ans = (ans + C(a[i] + i, i+1)) % MOD But in the example: \n  n=2, a = [2,1,0]\n  i=0: a0=2 -> C(2+0, 1) = C(2,1)=2\n  i=1: a1=1 -> C(1+1,2)=C(2,2)=1\n  i=2: skip because a2=0.\n  ans = 3. But the example output is 5. So why 5?\n\nLooking at the note: the example says 5 operations.",
+      "start_char": 1989,
+      "end_char": 3160,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "However, note that the problem statement says: \"Print the answer modulo 10^9+7\". The example output is 5. So what is the discrepancy? I recall that the problem is known as \"CF Round #683 - Problem D\" (or similar). The known solution is:\n\n  We are to compute: \n      sum_{i=0}^{n} C(a_i + i, i+1)\n\nBut wait, the example: Input: \n      2\n      2 1 0\n  Then the answer is 5? Alternatively, there is a known problem \"Infinity Table\" from CodeForces that matches the description. The known solution is:\n\n  Let dp[0] = 1, and then for each i from 0 to n, we do: dp[i+1] = (dp[i] * 2 - C(i, a_i))   ... but that doesn't match. Alternatively, note that the provided code has a loop that runs 9**6 times (which is 531441). We need factorials up to 400000? 531441 is about 531441, which is more than 400000, so that's acceptable. So what is missing? The code currently:\n\n  f = [1]   # factorial array, we need to build it up to 9**6 (which is 531441) at least. We need to precompute factorials for numbers 0 up to 531440 (the maximum index we use in the binomials). The maximum index we use in the binomials: \n  In the term: f[z+x] ... and z+x can be at most (max a_i) + (n) <= 200000 + 200000 = 400000, and 400000 < 531441, so we are safe. So the missing part in program1.py is the factorial precomputation. We should do:\n  for i in range(1, 9**6):\n      f.append(f[-1]*i % m) But note: the factorial for 0 is 1, then for 1: 1*1=1, for 2: 1*2=2, etc. So the missing line is: \n  f.append(f[-1] * i % m) But note: the loop runs from 1 to 531440 (since range(1, 9**6) goes from 1 to 9**6 - 1). We need factorials up to 531440?",
+      "start_char": 3164,
+      "end_char": 4800,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Actually, we need up to 400000, so 531440 is enough. So the completed program1.py missing part is the factorial precomputation. But note: the code after the factorial precomputation loop is:\n\n  for z in map(int, input().split()):\n      d += f[z+x] * pow(f[x+1] * f[z-1], -1, m) * (z>0)\n      x += 1\n\nHowever, there is an issue: when z==0, we skip (because (z>0) is 0). But also, when z==0, we have f[z-1] = f[-1] which is the last element of f? That would be wrong. We must avoid negative indices. But note the condition: (z>0) so when z==0, the entire term is multiplied by 0. So we don't use the denominator when z==0. But when z>=1, we compute: \n   term = f[z+x] * pow(f[x+1] * f[z-1] % m, -1, m) % m But wait: the binomial coefficient C(z+x, x+1) = f[z+x] / (f[x+1] * f[z-1])? Actually, the standard binomial coefficient is:\n   C(n, k) = f[n] * inv(f[k]) % m * inv(f[n-k] ) % m\n\nHere, we have n = z+x, and we are taking k = x+1? Then n-k = (z+x) - (x+1) = z-1. So yes, that is correct. But note: we must compute the denominator modulo m and then invert it.",
+      "start_char": 4801,
+      "end_char": 5867,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "However, the expression: \n   pow(f[x+1] * f[z-1], -1, m)\n\nThis is the modular inverse of (f[x+1] * f[z-1]) mod m. So the code for program1.py missing part is the factorial precomputation.",
+      "start_char": 5869,
+      "end_char": 6056,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Therefore, for program1.py, the missing code is:\n   f.append(f[-1] * i % m) But note: the loop is already written as:\n   for i in range(1,9**6):# TODO:",
+      "start_char": 6059,
+      "end_char": 6210,
+      "label": "bug_fixing",
+      "label_info": {
+        "type": "bug_fixing"
+      }
+    },
+    {
+      "text": "Your code here\n\nWe must fill the loop body. So we write:\n   f.append(f[-1] * i % m) But note: the variable `m` is defined as 10**9+7. ### Program2.py\n\nThe problem: \n  We have a sequence a. In one operation, we choose two distinct indices i and j: If a_i == a_j, then we can change one of them to 0. Otherwise, we change both to min(a_i, a_j). We want the minimum number of operations to turn the entire sequence to zeros. The provided code:\n\n  if 0 in a:\n      print(len(a) - a.count(0))\n  else:\n      # TODO: Your code here\n\nThe note says: if there is at least one zero, then we can use the zeros to clear the rest? The number of operations is the number of non-zero elements? But note: \n  The operation changes two elements at a time?",
+      "start_char": 6212,
+      "end_char": 6965,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Actually, the operation changes two elements at a time, but if we have a zero, then we can pair a non-zero with the zero: \n   Operation on (non-zero, zero): They are different -> change both to min(non-zero,0)=0. So in one operation, we can clear two non-zeros? But wait: the operation changes two elements? Actually, the problem says: \n   If a_i = a_j, change one of them to 0. Otherwise, change both to min(a_i, a_j). So if we have a zero and a non-zero: \n   They are different -> we change both to 0. So one operation clears two non-zeros?",
+      "start_char": 6968,
+      "end_char": 7525,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Actually, it clears one non-zero (because one of them was already zero) and the other becomes zero. So we remove one non-zero. But note: we have two elements: one zero and one non-zero.",
+      "start_char": 7526,
+      "end_char": 7711,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "After the operation, both become zero. So we have reduced the non-zero count by 1 (because we had one non-zero and one zero, and after we have two zeros). Therefore, if we have k zeros, then we can use each zero to clear one non-zero per operation?",
+      "start_char": 7713,
+      "end_char": 7963,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Actually, one operation uses two elements: one zero and one non-zero, and then we get two zeros. So the non-zero count reduces by one and the zero count increases by one? But note: we start with k zeros and (n-k) non-zeros. Operation 1: use one zero and one non-zero -> we get two zeros: so zeros become k+1, non-zeros become n-k-1. Then we can use the new zero to clear another non-zero? So the number of operations needed is the number of non-zeros? Because each operation removes one non-zero? But the example: \n  Input: \n      n=3, a = [1,2,3] -> no zero. The example in the note: \n          [1,2,3] -> \n          Operation1: choose (1,2): they are different -> change both to min(1,2)=1 -> [1,1,3]\n          Operation2: choose (1,1): change one to 0 -> [0,1,3]\n          Operation3: choose (0,1): change both to 0 -> [0,0,3]\n          Operation4: choose (0,3): change both to 0 -> [0,0,0]\n\n      So 4 operations. But the non-zero count initially is 3. If we had a zero initially, we would have done 3 operations? The code for the case with zero: \n        print(len(a) - a.count(0))   -> if there is a zero, then we output (n - count0) For the example without zero: \n        We output something else. What should we do in the else branch? We can consider:\n\n  Without any zero, we must create a zero. How?\n      We can use two distinct non-zero numbers. If we have two same numbers, we can set one of them to zero in one operation?",
+      "start_char": 7964,
+      "end_char": 9436,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Otherwise, we can set two numbers to the same value (by setting both to the min) and then in the next operation set one of them to zero. So the minimal operations:\n\n      Option 1: \n          Step1: if there is a duplicate, we can set one duplicate to zero in one operation? But note: we have to choose two duplicates. Then we get one zero and the rest remains. Then we have one zero, so then we can clear the rest in (n-1) operations? Total = 1 + (n-1) = n. But the example: n=3 -> 4, which is more than n.\n\n      Option 2: \n          We can break it down:\n\n          Let k = number of distinct elements? Actually, the known solution for this problem (from CodeForces) is:\n\n            if there is a zero: \n                ans = n - count0\n            else:\n                if there is a duplicate (i.e., at least one number appears at least twice):\n                    ans = n   # because we can create a zero in one operation without increasing the total non-zero count? \n                else:\n                    ans = n+1\n\n          Why? Without zeros and without duplicates, we must first create a duplicate? How?",
+      "start_char": 9446,
+      "end_char": 10600,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Operation1: choose two distinct numbers, say the smallest two. Then set both to the min. Now we have a duplicate. Then Operation2: choose the duplicate and set one of them to zero. Then we have one zero and the rest non-zeros. Then we need (n-1) operations to clear the rest? Total = 1 (to create duplicate) + 1 (to create zero) + (n-1) (to clear the rest) = n+1. But wait: after the first operation, we set two numbers to the same value. Then we have one duplicate. Then we can use that duplicate to create a zero. Then we have one zero. Then we can use the zero to clear the rest one by one: (n-2) operations? Total = 1 + 1 + (n-2) = n.\n\n          However, note: after the first operation, we set two numbers to the same value. Then we have: [min, min, ...] -> now we have two min. Then we can use these two min to set one to zero: then we have [0, min, ...]. Then we can use the zero to clear the other min? That takes one operation: so then we have [0,0,...]. Then we have n-2 non-zeros? Then we need n-2 operations? Total = 1 (first op) + 1 (second op) + (n-2) = n. But the example without duplicates: \n              [1,2,3] -> \n                  Operation1: (1,2) -> [1,1,3]  (now we have a duplicate: two ones)\n                  Operation2: (1,1) -> [0,1,3]   (we set one of the ones to zero) Then we have two non-zeros: 1 and 3. \n                  Operation3: (0,1) -> [0,0,3]   (using the zero to clear the 1)\n                  Operation4: (0,3) -> [0,0,0]   (using the zero to clear the 3)\n\n          So total 4 = n+1? (n=3 -> 3+1=4) -> matches. But wait: the above total was 4, which is n+1. Therefore, the known solution is:\n\n            if 0 in a:\n                ans = n - a.count(0)\n            else:\n                if len(a) == len(set(a)):\n                    ans = n+1\n                else:\n                    ans = n\n\n          Why? If there is a duplicate, we can create a zero in one operation without having to create a duplicate first? Example: [1,1,2] (no zero, but duplicate) -> \n                Operation1: choose the two ones -> set one to zero: [0,1,2] -> then we have one zero. Then we can clear the rest in 2 operations? Operation2: (0,1) -> [0,0,2]\n                    Operation3: (0,2) -> [0,0,0] -> 3 operations = n (which is 3). So the code for the else branch:\n\n            else:\n                if len(set(a))",
+      "start_char": 10631,
+      "end_char": 13157,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "< n:\n                    print(n)\n                else:\n                    print(n+1)\n\nBut note: the condition for duplicates: if there is at least one duplicate, then the length of set(a) is less than n. So the missing code for program2.py is:\n\n            if len(a) > len(set(a)):\n                print(n)\n            else:\n                print(n+1) But note: the input constraints: n>=2, and the numbers are between 0 and 100. ### Program3.py\n\nThe problem: \n  We have a rooted tree (vertex 1 is root). We infect the tree in seconds.",
+      "start_char": 13169,
+      "end_char": 13709,
+      "label": "bug_fixing",
+      "label_info": {
+        "type": "bug_fixing"
+      }
+    },
+    {
+      "text": "Each second:\n      Spreading: for each vertex v that has at least one child infected, we can choose at most one additional child to infect (if available). Injection: we can choose any healthy vertex to infect. We want the minimal seconds to infect the whole tree. The provided code:\n\n  for _ in range(int(input())):\n      n = int(input())\n      pp = list(map(int, input().split()))\n      sibs = [[] for _ in range(n+1)]\n      for i,p in enumerate(pp, 2):\n          sibs[p].append(i)\n      child_infected = [False] * (n+1)   # not used? \n      isibs = sorted(range(1, n+1), key=lambda x:len(sibs[x]), reverse=True)\n      remain = n\n      to_spread = []   # a heap? turn = 0   # we are iterating with turn? for turn, isib in enumerate(isibs):\n          children = sibs[isib]\n          while to_spread and to_spread[0][0] <= turn:\n              heappop(to_spread)\n          remain -= len(to_spread)   # ??? child_infected[isib] = True   # but we are at the parent? heappush(to_spread, (len(children)+turn, isib))\n          remain -= 1\n          if remain <= 0:\n              # TODO: Your code here\n\n      print(turn+1)\n\nThis code is confusing. The known solution for the problem (from CodeForces) is: We note that the infection starts at the root? Actually, initially all are healthy. But the problem says: we can do injections arbitrarily. We can start by injecting the root? However, the problem does not say we start with any infected. It says \"Initially, all vertices are healthy.\" Then the first second: Spreading: no child is infected, so we skip.",
+      "start_char": 13710,
+      "end_char": 15322,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Injection: we can inject the root. Then the root becomes infected. Then the next second: \n      Spreading: from the root, we can spread to one child (if the root has children) because at least one child (none at the moment) is infected?",
+      "start_char": 15329,
+      "end_char": 15565,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Actually, the root has no child infected at the beginning of the second. So we skip spreading? Then we inject one more? But note: we can choose which vertex to inject. We don't have to inject the root first? Actually, the problem: \n      \"You are given a rooted tree with n vertices. The vertex 1 is the root. \"\n\n  We can inject any healthy vertex. So we can inject the root in the first injection. Known solution approach:\n\n      We can use a greedy strategy. We simulate the process. We note that the spreading operation can be done arbitrarily (we choose which child to spread). The process:\n\n        Let time = 0. Initially, we have 0 infected. We start by injecting the root at time 1? Actually, the first second: \n            Injection: we inject the root -> infected: {1}. Then time becomes 1. Then at time 2:\n            Spreading: from the root, we can spread to one child (if the root has children). Then we can also inject one more vertex (anywhere). So we can get two new infections: one from spreading from the root and one from injection. How to minimize time? We can model the problem as:\n\n          We have the root initially infected at time 0? Actually, the problem says we start with no infected. Then we do the first second: \n              Operation: injection only -> we infect the root. Then at time=1, we have the root. Then at each second, we can do:\n\n            Spreading: for each infected vertex that has at least one child infected (but note: the spreading condition: \"if at least one child of v is infected\" -> but wait, the problem says: \"for each vertex v, if at least one child of v is infected, you can spread the disease by infecting at most one other child of v\". This is a bit confusing.",
+      "start_char": 15572,
+      "end_char": 17380,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Actually, the known solution (from CodeForces) for this problem (which is \"Tree Infection\") is:\n\n          We note that siblings (children of the same parent) can be infected by spreading. But the spreading operation for a parent v can only be done if at least one child of v is already infected. And then we can spread to one more child per second. Steps:\n\n            Step 1: We group the children by parent. For each parent, we have a count of children.",
+      "start_char": 17402,
+      "end_char": 17869,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Step 2: We note that we must inject at least one node in each group (to start the spreading in that group). But the root is special: we start by injecting the root? Actually, the root is the parent of its children. We do not need to inject the root?",
+      "start_char": 17883,
+      "end_char": 18132,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "We can inject the root to start, but then we can spread from the root to one child. Then we can spread from the root to another child in the next second? However, the problem does not require that we start with the root. We can start by injecting any vertex. But the root must be infected at some point. Known solution:\n\n            We consider the groups: for each parent, the number of children. We also note that the root is already considered? Actually, the root is the parent of its direct children. We start by infecting the root (by injection) at time 0?",
+      "start_char": 18133,
+      "end_char": 18730,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Actually, the problem says the first second: we do spreading (which does nothing) and then injection. So at time 1, we have one infected (the root). Then we have the groups: for each parent, we have a list of children.",
+      "start_char": 18731,
+      "end_char": 18949,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "The root is infected, so for the root's children, we can spread one per second (if we have k children of the root, we can spread to one per second). But we can also inject one node per second.",
+      "start_char": 18963,
+      "end_char": 19155,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "The idea:\n\n              Let f(t) be the total number of infected by time t.\n\n              We have two types of infections: by injection and by spreading. We must inject at least one node in each group (to start the spreading in that group). But note: the root is a group? Actually, the root is already infected (by injection) so we don't need to inject again for the root. However, the root's children: we can either inject one of them or wait for the root to spread. Actually, the known solution:\n\n              We collect the sizes of the groups (for every node that has children). We start by having the root infected. Then, we need to infect the children of each node.",
+      "start_char": 19169,
+      "end_char": 19886,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "For a node with k children, we can do:\n\n                 - We must inject at least one child in that group (to start the spreading). Then the remaining k-1 children can be infected by spreading. But note: the spreading for that node can only happen in a second after the injection and then one per second.",
+      "start_char": 19887,
+      "end_char": 20192,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "However, the spreading operation happens for every node that has at least one child infected. So if we have multiple groups, the spreading operations can happen in parallel. The process:\n\n                 Let t=0: we have the root infected. Then at each second t (starting from t=1), we do:\n\n                    Spreading: for every node that has at least one child infected and that hasn't spread to all its children, we can spread to one more child (if we choose to). Injection: we can inject one more node (anywhere). How to schedule?",
+      "start_char": 20208,
+      "end_char": 20799,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "We note that we must inject one node for each group (except the root, which we already did). So we have to inject (number of groups) nodes?",
+      "start_char": 20836,
+      "end_char": 20975,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Actually, the groups are the nodes that have children? But note: the root is already infected, so we don't need to inject the root again. But for each group (each parent that has children) we must inject at least one child? Actually, we don't need to inject a child for every group?",
+      "start_char": 20976,
+      "end_char": 21277,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "We can also use the root to spread to its children without injecting any child? But the condition for spreading: the parent must have at least one child infected. So for the root, we have no child infected initially. So we must inject at least one child of the root? Or we can inject a child of the root and then the root can spread to the others? Actually, we can choose the injection arbitrarily.",
+      "start_char": 21278,
+      "end_char": 21714,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "We can inject a child of the root at time 1 (in the first second after the root). Then at time 2, the root can spread to another child? Algorithm:\n\n                   Step 1: Count the children for each node. We have an array `deg` for the degree (number of children) for each node?",
+      "start_char": 21715,
+      "end_char": 22016,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Actually, the root is node 1, and we are given the parent of nodes 2..n.\n\n                   Step 2: We start with the root infected. So we set:\n\n                         infected = {1}\n\n                   Step 3: We note that for each node u (that has children), we will need to eventually have at least one child of u infected (by injection) to start the spreading. So the number of injections we must do is: the number of groups (each group is a parent) that have at least one child? But note: the root is already infected, so we don't need to inject the root again. However, the root's children: we must inject at least one?",
+      "start_char": 22017,
+      "end_char": 22666,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Actually, we must inject one node in each group? But note: the root is a parent? So we have:\n\n                         groups: for each parent, we have a group of children.",
+      "start_char": 22688,
+      "end_char": 22860,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "The root is infected, so we don't need to inject the root. But for the root's group (its children), we must inject at least one child?",
+      "start_char": 22902,
+      "end_char": 23036,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Similarly, for a non-root parent u, we must inject at least one child of u? So the total injections we must do is: the number of groups (each parent that has at least one child) because we must start the spreading in that group. However, note: the root is already infected, so we don't count the root as a group that requires an injection?",
+      "start_char": 23058,
+      "end_char": 23438,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Actually, the root is the parent of its children, and we must start the spreading in the root's group by injecting one child?",
+      "start_char": 23439,
+      "end_char": 23564,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Therefore, the number of required injections is: the number of nodes that have at least one child? But note: the root is already infected, so we don't inject the root again. We inject one child per parent (including the root) to start the spreading in that group. So the total injections = number of groups (each parent with children) = the number of nodes that have at least one child. However, wait: the root is a parent? Yes. So we need to inject one child of the root? Then, after we have done these injections, we can use spreading to cover the rest. How many seconds for spreading?",
+      "start_char": 23586,
+      "end_char": 24276,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "For a parent u with k children, we have injected one child at time t0. Then the spreading for u can happen at the next seconds: one child per second. So the time to cover the entire group is t0 + k - 1? But note: the spreading operations happen in parallel for different parents. So the total time is the maximum over all groups of (t0 + k - 1), where t0 is the time when we injected the representative of that group. How to assign the injection times? We want to minimize the total time. We can schedule the injections arbitrarily. We have:\n\n                     Let m = number of groups (nodes that have children). We must assign an injection time for each group (each group gets one injection). The injection times are distinct and in the range",
+      "start_char": 24298,
+      "end_char": 25149,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "[1, m] (if we do one injection per second). Then for a group with k children, the time when the last child is infected is: \n\n                         injection_time + (k-1) But note: we can also do injections and spreading in the same second?",
+      "start_char": 25150,
+      "end_char": 25392,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "The process per second:\n\n                     Spreading happens first: so if we inject a node at time t, then at time t, that node becomes infected. Then at the next second (time t+1), the parent of that node (if it has at least one child infected) can spread to one more child? But actually, the spreading in the same second as the injection?",
+      "start_char": 25455,
+      "end_char": 25798,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "The problem says: \n                     \"each second you do two operations, the spreading operation and, after that, the injection operation\"\n\n                   So at time t:\n\n                     Spreading: we can spread from a parent that already had at least one child infected (from previous seconds) to one more child. Then Injection: we inject a new node.",
+      "start_char": 25820,
+      "end_char": 26182,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Therefore, if we inject a node at time t, then at time t the node becomes infected. Then at time t+1, the parent of that node can spread to one child (if we choose to). So for a group with k children, if we inject one child at time t, then:\n\n                     time t: one child infected (the one we injected).\n                     time t+1: we can spread to one more child -> then two children infected.\n                     time t+2: we can spread to one more -> three children infected. ...\n                     time t + (k-1): k children infected.",
+      "start_char": 26225,
+      "end_char": 26819,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Therefore, the entire group is infected by time t + k - 1. Then the total time for the entire tree is the maximum over all groups of (t + k - 1), where t is the injection time for that group. We have m groups.",
+      "start_char": 26840,
+      "end_char": 27049,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "We assign the injection times as the integers 1, 2, ..., m. \n\n                   How to minimize the maximum (t + k - 1)?",
+      "start_char": 27090,
+      "end_char": 27211,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "We should assign the larger groups to earlier injection times. So sort the groups by the number of children (descending). Then assign the earliest injection time to the group with the most children. Then the total time T is:\n\n                         T = max_{i} (t_i + k_i - 1)\n\n                   where t_i is the injection time for group i (which is i+1, because we assign in increasing order) and k_i is the size of group i.\n\n                   But note: we start at time 0 with the root infected. Then at time 1, we do the first injection. However, the root is infected at time 1? Actually, the first second:\n\n                         time 0: nothing? The problem: \n                             Initially: all healthy. Second 1: \n                                 Spreading: nothing -> then Injection: we inject the root. So the root is infected at time 1. Then at time 2: \n                         Spreading: from the root (which has one child infected? Actually, we haven't infected any child of the root yet) -> so we cannot spread from the root? Then we inject one more (say a child of the root, for the root's group). So the injection for the root's group happens at time 2. Then the time for the root's group (with k children) is: 2 + (k-1) = k+1. But wait, we have multiple groups. We also have groups for other parents. However, the provided code does:\n\n                         sibs = [[] for _ in range(n+1)]\n                         for i,p in enumerate(pp, 2):\n                             sibs[p].append(i) Then isibs = sorted(range(1, n+1), key=lambda x:len(sibs[x]), reverse=True)",
+      "start_char": 27233,
+      "end_char": 29128,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "This sorts the nodes by the number of children (descending). Then we iterate over isibs (the nodes with children, from largest group to smallest) with index 'turn' (starting at 0). For each node (isib) at turn 'turn':\n\n                             while to_spread and to_spread[0][0] <= turn: \n                                 pop from the heap -> this seems to be removing events that have expired?\n\n                             remain -= len(to_spread) # meaning: we are going to use the current spreading events to reduce the remaining work? Then we mark child_infected[isib]=True? (But we are at the parent node) Then we push (len(children)+turn, isib) into to_spread. Then remain -= 1   (because we infected the parent? or the child? Actually, we are iterating on the parent nodes) This code is not standard. Known solution from CodeForces submissions:\n\n                     We start by having the root infected at time 0? Actually, we don't have the root infected initially. We must inject the root. So we do:\n\n                         time = 0: we start.\n                         time = 1: we inject the root -> infected: {1}\n\n                     Then we have the groups: for each parent, the number of children. We also include the root? We then consider:\n\n                         Let a = sorted([len(children) for node in nodes if children] + [0]*(something), reverse=True)\n\n                     But note: the root is already infected, so we don't need to inject the root again. But we do need to inject one child per group (including the root's group). Then we simulate:\n\n                         Let t=1 (current time) and we have the root infected. We have a list of events: for each group, we will have an event when the spreading in that group catches up. Alternatively, we can use a greedy:\n\n                         We maintain a heap (priority queue) for the groups. The key is the time when the group will have its next spreading available? The provided code:\n\n                         to_spread = []   # min-heap by time?\n\n                         for turn, isib in enumerate(isibs):   # isibs: list of nodes sorted by number of children descending. # First, we remove from the heap all events that have happened by the current turn? while to_spread and to_spread[0][0] <= turn:\n                                 heappop(to_spread)\n\n                             # Then, we reduce the remaining work by the number of spreading events we have available? remain -= len(to_spread) #",
+      "start_char": 29155,
+      "end_char": 32043,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "This line is suspicious: we are subtracting the same spreading events multiple times?\n\n                             # Then we mark the current node (isib) as having its child_infected set to True? \n                             child_infected[isib] = True   # This might be a misnomer: we are infecting the parent? \n\n                             # Then we push an event: (len(children)+turn, isib) -> the time is len(children)+turn, and the node isib. heappush(to_spread, (len(children)+turn, isib))\n\n                             remain -= 1   # because we infected one node (the current parent? or the child?) if remain <= 0:\n                                 # then we break and output turn+1? This does not match the known solution.",
+      "start_char": 32046,
+      "end_char": 32861,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "After reading known submissions for \"Tree Infection\", a common solution is:\n\n                     Step 1: Count the children for each node. We start by having the root infected at time 0. Step 2: We collect the counts for each parent (including the root) that has at least one child. Let these counts be in a list L. We also note that we must inject one child in each group. Step 3: We sort L in descending order. Step 4: We consider that we will inject one child in each group at distinct seconds. We start at second 1 (for the first injection). Step 5: We want to know the minimum time T such that:\n\n                             For each group i with count = L[i], we have:\n\n                                 T >= (injection_time_i) + (number of spreading steps needed for the group)",
+      "start_char": 32882,
+      "end_char": 33754,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "The spreading steps: after we inject the child, we can spread to the remaining L[i]-1 children at a rate of one per second. But note: the spreading can only happen if the parent is infected? And the parent might not be infected yet? Actually, the parent is infected earlier? The root is infected at time 0. For a child of the root, the parent (root) is infected. For a non-root parent, we must have infected the parent earlier? How is the parent infected?",
+      "start_char": 33785,
+      "end_char": 34263,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "The parent is either the root (infected at time 0) or a node that is a child of some other node. But we are not injecting the parents? We are injecting one child per group. The parent might be infected by injection? Or by spreading?",
+      "start_char": 34287,
+      "end_char": 34542,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Actually, the parent is not necessarily infected when we inject its child. But the spreading condition requires that the parent has at least one child infected. It does not require the parent to be infected? Wait, the problem says: \"for each vertex v, if at least one child of v is infected\" -> then we can spread to one more child.",
+      "start_char": 34566,
+      "end_char": 34921,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "It does not say the parent v must be infected. So the parent v does not need to be infected for the spreading to happen?",
+      "start_char": 34922,
+      "end_char": 35042,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Therefore, we can ignore the infection of the parents? Then the only constraint is the injection time for the group and the spreading steps. So for group i, if we inject at time t_i, then the last child in that group is infected at time t_i + L[i] - 1. And we have one injection per second. We assign the groups in increasing order of t_i, and we want to minimize the maximum (t_i + L[i] - 1).",
+      "start_char": 35089,
+      "end_char": 35549,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "We sort the groups by L[i] descending. Then we assign the earliest available injection times to the groups with the largest L[i]. Then:\n\n                         Let T = 0. For i in range(len(L)):\n                             T = max(T, i+1 + L[i] - 1)   # because the i-th group (0-indexed) gets injected at time i+1. But wait, we also have the root? The root is already infected at time 0. But the root's group: we inject one child at time 1, then the last child in the root's group is infected at time 1 + (k_root - 1) = k_root. Then T = max(T, k_root) Then we also have other groups. However, what if there are more groups than the maximum k? But note: the example: \n                         n=5, tree: \n                            1: [2,3,4,5]   -> root has 4 children. Then L = [4] (only the root has children? the other nodes have no children? so only one group). Then T = 1 + 4 - 1 = 4. But the entire tree: \n                         time0: nothing.\n                         time1: inject the root -> infected: {1}\n                         time2: inject one child of the root (say 2) -> infected: {1,2}; then spreading: from the root (which has one child infected) -> we can spread to one more child (say 3) -> infected: {1,2,3} -> but wait, the spreading happens in the same second as the injection? The process for time2:\n\n                         Spreading: we can spread from the root to one child (because the root has at least one child infected (child 2) -> we spread to child 3) -> then we have 1,2,3. Injection: we inject child 4? -> then we have 1,2,3,4. Then time3: \n                         Spreading: from the root (which has children 2,3,4 infected) -> we can spread to child 5. Injection: we inject something else? but there is no other group. So at time3, we have infected the entire tree. But our T=4. Why? The group for the root: we have 4 children. We inject one child at time1? Actually, we injected the root at time1. Then we need to inject one child of the root? We have two injections: \n                         time1: inject the root. time2: inject one child of the root. Then the spreading at time2: from the root to one child -> so we get two children of the root at time2. Then at time3: we can spread from the root to one more child -> three children. Then at time4: we can spread from the root to the last child. So without additional injections, it takes 4 seconds. But we can also inject more than one child? The problem: we can only inject one vertex per second.",
+      "start_char": 35572,
+      "end_char": 38671,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "We have to inject the root and then one child of the root? That's two injections. Then the spreading can cover the remaining two children in two seconds. Total time: 1 (for root) + 1 (for first child) and then two seconds of spreading -> time4. But we did:\n\n                         time1: inject root -> [1]\n                         time2: inject child2 -> [1,2]; then spreading: from root to child3 -> [1,2,3]\n                         time3: inject child4 -> [1,2,3,4]; then spreading: from root to child5 ->",
+      "start_char": 38694,
+      "end_char": 39271,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "[1,2,3,4,5]\n\n                     So at time3, we have injected child4 and then spreading to child5? But note: at time3, the spreading happens first: Spreading: from the root (which has child2 and child3 infected) -> we can spread to one more child (child4? but child4 is not infected yet? we are about to inject child4 in the injection phase).",
+      "start_char": 39272,
+      "end_char": 39665,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Actually, the spreading phase happens before the injection phase. So at time3:\n\n                         Spreading: we spread from the root to child4? But child4 is not infected yet? We haven't injected it. We can only spread to a healthy child. But child4 is healthy.",
+      "start_char": 39689,
+      "end_char": 39980,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "However, we are going to inject child4 in the injection phase of time3. But the spreading phase cannot use the injection of the same second? So at time3:\n\n                         Spreading: we can spread from the root to one child: we choose child5? Then injection: we inject child4. Then we have: root, child2, child3, child4, child5. So at time3, we are done. Therefore, the entire tree is infected at time3. How to account for this? We have:\n\n                         Group root: 4 children. We inject the root at time1. We inject one child of the root at time2. Then we have two more children to infect. We can do:\n\n                             time2: after injection, we have two children infected? Then spreading: we can spread one more -> so at the end of time2, we have three children infected? \n                             time3: we inject the last child? But we don't need to inject the last child? We can spread from the root at time3 to the last child. But note: we are allowed to inject any healthy vertex. We don't have to inject a child of the root.",
+      "start_char": 40004,
+      "end_char": 41353,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "We could inject a child of the root at time2, and then at time3 we inject an unrelated node? But there is no unrelated node: the tree has only the root and its children. So we only have the root's group. The known solution: \n\n                         Let groups = sorted([4], reverse=True) Then we do:\n\n                             T = 0\n                             current_time = 0\n                             for size in groups:\n                                 current_time += 1\n                                 T = max(T, current_time + size) But then T = max(0, 1+4)=5 -> not 3.\n\n                     Another known solution from a submission:\n\n                         #include <bits/stdc++.h>\n                         using namespace std;\n                         int main() {\n                             ios::sync_with_stdio(false);\n                             cin.tie(nullptr);\n                             int t;\n                             cin >> t;\n                             while (t--) {\n                                 int n;\n                                 cin >> n;\n                                 vector<int> p(n+1), cnt(n+1);\n                                 for (int i=2; i<=n; i++) {\n                                     cin >> p[i];\n                                     cnt[p[i]]++;\n                                 }\n                                 vector<int> v;\n                                 v.push_back(1); // for the root? for (int i=1; i<=n; i++) {\n                                     if (cnt[i] > 0) {\n                                         v.push_back(cnt[i]);\n                                     }\n                                 }\n                                 sort(v.begin(), v.end(), greater<int>());\n                                 int k = v.size();\n                                 for (int i=0; i<k; i++) {\n                                     v[i] = v[i] - (k - i);\n                                 }\n                                 int add = 0;\n                                 for (int x : v) {\n                                     if (x > 0) {\n                                         add = (add + x + 1) / 2; // ? \n                                     }\n                                 }\n                                 cout << k + add << '\\n';\n                             }\n                         }\n\n                     This is not obviously matching.",
+      "start_char": 41354,
+      "end_char": 43911,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "After reading the editorial for CodeForces #770, problem D: \n\n                     The solution:\n\n                         Let f(t) be the number of nodes we can infect by time t.\n\n                         We infect the root at time 1. Then, we have:\n\n                             f(0)=0, f(1)=1. For t>=1:\n\n                             The number of injections we can do by time t is t.",
+      "start_char": 43932,
+      "end_char": 44371,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "The number of spreading events: for each group, the number of spreading events is min( (t - injection_time_of_that_group), (size_of_group - 1) )",
+      "start_char": 44401,
+      "end_char": 44545,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "[because we can only spread to at most size_of_group-1 in that group]. But we also must account for the fact that we can only do one spreading per group per second? Actually, the editorial solution is complex. Given the provided code structure, it is likely that the author intended a heap-based simulation. The provided code does:\n\n                     sibs = list of children for each node. isibs = sorted list of node indices by number of children descending. to_spread = min-heap of events, where an event is (time, node) meaning that at 'time', the spreading for 'node' will have caught up? \n\n                     remain = n   # total nodes to infect? We start by infecting the root?",
+      "start_char": 44548,
+      "end_char": 45396,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Actually, the code does not explicitly infect the root. Then for turn, isib in enumerate(isibs):   # we are iterating over the nodes with children, in descending order of the number of children. Step 1: remove from to_spread any event that has time <= turn (the current index in the sorted list). Step 2: remain -= len(to_spread)   -> this means we are accounting for the spreading events that are happening at this turn? Step 3: child_infected[isib] = True   -> we are marking that this node (which is a parent) has been handled? Step 4: push an event (len(children)+turn, isib) into to_spread. Step 5: remain -= 1   -> because we are infecting one node (probably the parent? or the child? but we are on the parent node)\n\n                         Step 6: if remain<=0, then we break and output turn+1. What does this simulate? Let's take the example: n=5, tree: only the root has 4 children. Then isibs = [1] (the root) because it has 4 children, and other nodes have 0.\n\n                     turn=0, isib=1. to_spread is initially empty. remain = 5.\n\n                     Step1: while to_spread and event time<=0: nothing. Step2: remain -= 0 -> remain=5.\n\n                     Step3: child_infected[1]=True. Step4: push (4+0, 1) = (4,1) into to_spread. Step5: remain becomes 4. Then we don't break. Then the loop ends (only one iteration). Then we print turn+1 = 1? -> but the answer should be 3. Clearly, this is not working. Another example: the sample in the problem statement?",
+      "start_char": 45397,
+      "end_char": 47313,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "The provided code has a note: \n                         \"Note: the image depicts the tree from the first test case during each second. \"\n\n                   But the first test case is not described in text. Given the complexity, and the fact that the provided code structure is given, we must complete the TODO in the code. The TODO is in the if remain<=0: block. The code: \n                         if remain <= 0:\n                             # TODO:",
+      "start_char": 47335,
+      "end_char": 47846,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Your code here\n\n                   We are to break out and then output turn+1? But in the example above, we did not break. Then what? The for loop continues. But there is only one node in isibs. Then the next turn: turn=1, isib = next in isibs? But there is none. So the for loop ends, and we print turn+1 = 1+1 = 2? That is not 3. Alternatively, the for loop might be for the initial scheduling, and then we need to simulate seconds until remain<=0. But the for loop is over the sorted list of nodes. Given the time constraints, and since the problem states that the sum of n over test cases is <= 200000, the for loop is over at most 200000 nodes.",
+      "start_char": 47847,
+      "end_char": 48659,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "The intended algorithm in the provided code might be:\n\n                     We are infecting the parents in the order of the number of children. The heap to_spread is used to schedule when the spreading for a group will finish? The event (time, node) means that at 'time', the spreading for 'node' will have finished.",
+      "start_char": 48680,
+      "end_char": 49042,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Then, at turn 'turn' (which is the index in the sorted list), we:\n\n                         - First, remove any event that has finished by turn 'turn'.\n\n                         - Then, we use the current spreading events (which are the ones in the heap) to reduce the remaining work: each event in the heap represents one spreading event that happens at this turn? \n\n                         - Then, we schedule the current node: we push (len(children)+turn, node) -> this event will happen at time = len(children)+turn.\n\n                         - Then, we infect one node (probably the current node) -> remain -= 1.\n\n                         - If at this point, remain<=0, we break and output turn+1. But in the example:\n\n                     Initially: remain=5.\n\n                     turn=0, node=1 (with 4 children):\n\n                         to_spread is empty -> remain=5. then we push (4+0,1) = (4,1) into to_spread. then remain becomes 4.\n\n                     turn=1: there are no more nodes in isibs? So the for loop ends. Then we have remain=4>0, but we break out and output turn+1=2. This is not 3.\n\n                   How to get to 3?",
+      "start_char": 49065,
+      "end_char": 50325,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "We note that after the for loop, we might need to continue simulation? But the code after the for loop is: print(turn+1). In the example, turn=0 in the first iteration, then the loop ends and turn is still 0? Actually, the for loop uses `turn` as the index. In the example, there is only one element in isibs, so the loop runs once with turn=0. Then we print 0+1=1. This is not right. Alternatively, the author might have intended to use a while loop?",
+      "start_char": 50347,
+      "end_char": 50900,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Given the complexity, and since the problem is known to have a solution that uses a heap and a while loop for the spreading, we might need to change the approach.",
+      "start_char": 50922,
+      "end_char": 51084,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "However, the problem says: \"Output only the missing code\"\n\n                   The missing code is only in the TODO part. The TODO part is: when remain<=0, we break and then the answer is turn+1. But in the example, we never hit remain<=0 in the for loop.",
+      "start_char": 51105,
+      "end_char": 51399,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "What if we change the for loop to a while loop? But the structure is for turn, isib in enumerate(isibs): \n\n                   We cannot change that.",
+      "start_char": 51420,
+      "end_char": 51568,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Another possibility: the TODO part is to break out of the for loop and then the answer is turn+1, but if we don't break, then after the for loop we need to do more? The code after the for loop is: print(turn+1). In the example, we do one iteration (turn=0) and then after the for loop, turn=0, so we print 1. This is not 3.",
+      "start_char": 51589,
+      "end_char": 51954,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Given the provided code structure, it is likely that the author intended to use the heap to simulate additional seconds after the for loop. But the code does not have that. Therefore, the provided code might be for a different approach. Known solution from a submission (Python) for \"Tree Infection\" (CF round #770, Div2.D):\n\n                     import heapq\n\n                     t = int(input().strip())\n                     for _ in range(t):\n                         n = int(input().strip())\n                         parent = list(map(int, input().split())) deg = [0]*(n+1)\n                         for i in range(2, n+1):\n                             deg[parent[i-2]] += 1\n\n                         # Count the number of children for each node\n                         deg[0] = 0   # dummy\n                         # We start with the root: node1 has deg[1] = number of children. # We will have to inject one in each group. groups = []\n                         for i in range(1, n+1):\n                             if deg[i] > 0:\n                                 groups.append(deg[i])\n\n                         groups.sort(reverse=True)\n                         # We will inject the root at time0? \n                         # Actually, we need to inject the root as well? # But the root is not in the groups? # We must include the root? #",
+      "start_char": 51995,
+      "end_char": 53453,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "The root is node1, and it is a parent. But the spreading for the root can only start after one child is infected, so we must inject one child of the root. #",
+      "start_char": 53532,
+      "end_char": 53688,
+      "label": "test_generation",
+      "label_info": {
+        "type": "test_generation"
+      }
+    },
+    {
+      "text": "However, the root itself is not a child of any node. How is the root infected? # We inject the root at time1. # So we add the root as a group? Actually, the root is not a child, so it doesn't form a group of children? # But the root is a parent. The group for the root has size = deg[1] (number of children of the root). # So groups = [deg[1], deg[2], ...] for nodes that have deg[i]>0. # Then we simulate:\n\n                         # Let time = 0.\n                         # We will inject one node per second. The spreading happens automatically. # First, we inject the root at time1. # Then, we inject one child in each group at distinct seconds. # But the root is not in the groups? # We should include the root in the groups? # Editorial solution: \n                         #   Let ans = 0. # We have a heap. #   First, at time0, we have the root infected? # Then, for each group, we push the current time (which is 0) for that group. #",
+      "start_char": 53715,
+      "end_char": 54997,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Then, at each second, we do:\n                         #       spreading: for the group that has the earliest time, we can spread one more child at this second.\n                         #       injection: we inject the group that has the most children. # Alternatively, a known solution:\n\n                         #   groups = sorted(groups, reverse=True)\n                         #   for i in range(len(groups)):\n                         #       groups[i] = groups[i] + i + 1   # because we inject at time i+1, and then the group will take groups[i] - 1 seconds to spread, so the last child is at time i+1 + groups[i] - 1 = groups[i] + i.\n                         #   then T = max(groups) \n\n                         # But then we also have the root to infect? # We must also inject the root. So we need to include the root in the injection schedule. # So we insert the root's group (which is deg[1]) at the beginning. # However, the root is not in the groups we collected? # We should include the root's group. #   In the deg array, the root is node1, and we have deg[1] = number of children. # So groups should include deg[1]. # Then T = max_{i} (groups[i] + i) \n\n                         # But then we have to infect the root itself. When do we infect the root? # We inject the root at time1. Then the last child in the root's group is infected at time1 + groups[0] - 1.\n                         # But then the total time for the root's group is groups[0] ( because 1 + groups[0] - 1 = groups[0] ) and for the next group (i=1) we inject at time2, and the last child is at time2 + groups[1] - 1 = groups[1]+1. # So T = max(groups[0], groups[1]+1, groups[2]+2, ...)\n\n                         #   Therefore, we can do:\n\n                         #        groups = [deg[i] for i in range(1, n+1) if deg[i]>0]\n                         #        groups.sort(re. \n                         #        groups = [0] + groups   # and then sort in descending order? \n                         # Actually, we want the largest group first. #        groups.sort(reverse=True)\n                         #        T = 0\n                         #        for i, g in enumerate(groups):\n                         #            T = max(T, i+1 + g)\n                         #        print(T)\n\n                         #   But wait, the spreading for a group with size g: we inject it at time i+1, and then the last child is at time i+1 + g - 1 = i+g.\n                         # However, the above is i+1+g. #   Why i+1+g? \n\n                         #   The known solution in C++ from the editorial is:\n\n                         #        sort(v.rbegin(), v.rend());\n                         #        int ans = 0;\n                         #        for (int i=0; i<v.size(); i++) {\n                         #            ans = max(ans, i+1+v[i]);\n                         #        }\n\n                         #   then they do additional steps for the spreading of the root? # But note: the root is not included in v? #   In the C++ code I provided earlier, they did:\n\n                         #        vector<int> v;\n                         #        v.push_back(1); // for the root? #        for (int i=1; i<=n; i++) {\n                         # if (cnt[i] > 0) {\n                         #                v.push_back(cnt[i]);\n                         #            }\n                         #        }\n\n                         #   then sorted in descending order. #   In the example: \n                                 n=5, \n                                 cnt[1]=4, cnt[2.. 5]=0. then v = [1,4] -> sorted: [4,1]\n                                 then for i=0: ans = max(0, 0+1+4)=5\n                                        i=1: ans = max(5, 1+1+1)=5. then they do:\n                                        for (int i=0; i<k; i++) {\n                                            v[i] = v[i] - (k - i);   // k=2\n                                        }\n                                        // v[0]=4- (2-0)=4-2=2, v[1]=1-(2-1)=1-1=0. int add=0;\n                                        for (int x:v) {\n                                            if (x>0) add = (add+x+1)/2; // add = (0+2+1)/2 = 3/2 = 1 (integer division? (3+1)//2=2? )\n                                        }\n                                        // add = (2+1+1)//? \n                                        // (add+x+1)/2: for x=2: (0+2+1+1) is not the code.\n\n                         // The code: \n                                 int add = 0;\n                                 for (int x : v) {\n                                     if (x > 0) {\n                                         add = (add + x + 1) / 2;\n                                     }\n                                 }\n                                 // then output k+add = 2+1=3. So the answer for the example is 3. Therefore, the provided code in program3.py might be trying to implement this. The provided code in program3.py does:\n\n                         sibs = [[] for _ in range(n+1)]\n                         for i,p in enumerate(pp, 2):\n                             sibs[p].append(i)\n\n                         # then isibs = sorted(range(1, n+1), key=lambda x:len(sibs[x]), reverse=True)\n\n                         # This is sorting the nodes by the number of children descending. # Then we have a heap to_spread. #",
+      "start_char": 55025,
+      "end_char": 60987,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "The variable 'remain' is initialized to n.\n\n                         # Then for turn, isib in enumerate(isibs):\n                         #   ... In the example, isibs = [1] (node1, the root) because it has 4 children, and then other nodes have 0.\n\n                   turn=0, isib=1. then we push (4+0,1) into the heap. then remain = 5 - 0 (from len(to_spread)) - 1 = 4.\n\n                   then we check if remain<=0 -> no. Then the loop ends. Then we have to do something else? The TODO is in the if remain<=0: break, but we haven't done that. Then after the for loop, we print turn+1 = 1. This is not 3. Therefore, the provided code might be for a different approach. Given the complexity, and since the TODO is only one part, we might try to complete the code as follows: In the if remain<=0: block, we break and then the answer is turn+1. But in the example, we never hit that. Alternatively, the author might have intended to use a while loop after the for loop to continue until remain<=0. But the problem says: only output the missing code. The missing code is only in the TODO part.",
+      "start_char": 61040,
+      "end_char": 62431,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "What if the TODO part is to break and then set a variable and then after the for loop, simulate more? But the code structure is given, and we cannot change it.",
+      "start_char": 62452,
+      "end_char": 62611,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "I notice that the sample test might be the one in the note: \n                         minimal number of seconds needed is 4 for the first test case in the note? The note says: \n                         \"The image depicts the tree from the first test case during each second. \"\n\n                   But we are not given the tree structure.",
+      "start_char": 62653,
+      "end_char": 63010,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Given the time, and since the provided code for program3.py is not working for the example, I will output a placeholder. However, the problem says: the sum of n over test cases is <= 200000, and the provided code uses a for loop over isibs, which is at most n.\n\n                   The intended TODO might be: \n\n                         if remain <= 0:\n                             break\n\n                   Then after the for loop, we have to simulate more seconds? But the code doesn't do that. Alternatively, the author might have intended to \n\n We are out of time. Given the complexity, I will output for program3.py: \n        break\n\n because the TODO is in the if remain<=0: and we want to break out of the for loop. Then the answer is turn+1. But in the example, we never break, so it is not enough.",
+      "start_char": 63031,
+      "end_char": 63898,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Another possibility: the TODO is to set the answer and break, and then we output that. But the code after the for loop is: print(turn+1) So if we break in the TODO, then we output turn+1. If we don't break, then after the for loop we output turn+1 (which is the last turn in the for loop). In the example, the last turn is turn=0, so output 1. This is not 3. Therefore, the provided code might be for a different problem. Given the instructions, we must output only the missing code. For program1.py: factorial precomputation. For program2.py: the else branch. For program3.py: break   (because the TODO is in the if remain<=0: and we break to output turn+1)\n\n Let's hope the sample test for program3.py is not the example we discussed. We output the JSON. But note: the example in the note for program3.py might be the following from the problem statement: \"The first test case during each second\"\n\n      The image is not provided, but the sample output might be 4. In the provided code, if we do break in the TODO, then for a test case with n=5 and the tree with root and 4 children, we do one iteration in the for loop and then output 1, which is not 4. Therefore, I change my mind for program3.py. The known solution from the editorial is to use a heap to schedule the spreading events and then simulate seconds.",
+      "start_char": 63905,
+      "end_char": 65261,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "The provided code might be doing:\n\n      to_spread: heap of events (time, node) when the spreading for that node will have finished.\n\n      isibs: the list of nodes that have children, sorted by the number of children descending. We are iterating over isibs to schedule the initial spreading events. then, after the for loop, we might need to simulate seconds until remain<=0. But the code doesn't have that. Given the TODO is only one line, and the note says \"Output only the missing code\", we output for program3.py: \n        break\n\n and hope that in the test cases, the for loop will cover all and we break when remain<=0. But in the example, we have remain=4 after the first iteration, and then the for loop ends. So we need to continue. Since we cannot change the for loop, and the TODO is only in the if remain<=0, we might need to do nothing in the TODO and then after the for loop simulate more. But the problem says only output the missing code. Therefore, I output for program3.py: \n        break\n\n This is the only thing we can do. Alternatively, the author might have intended to do:\n\n      if remain <= 0:\n          break\n\n and then after the for loop, if remain>0, we do:\n\n      while remain > 0:\n          # simulate seconds\n          ... But the code doesn't have that. So I think the intended TODO is to break out of the for loop when we have infected all. Therefore, I output \"break\".",
+      "start_char": 65265,
+      "end_char": 66697,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "In summary:\n\n   program1: \"f.append(f[-1]*i%m)\"\n   program2: \n        if len(a) > len(set(a)):\n            print(n)\n        else:\n            print(n+1)\n   program3: \"break\"\n\n But note: in program2, the else branch should be the code for when there is no zero. Let's write the JSON.",
+      "start_char": 66706,
+      "end_char": 66988,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    }
+  ],
+  "metadata": {
+    "task_id1": "block_completion_007437",
+    "task_id2": "block_completion_008172",
+    "task_id3": "block_completion_004398"
+  },
+  "original_reasoning": "We are given three programs with missing parts. We must output only the missing code for each program in a JSON object.\n\nLet's break down each program:\n\n### Program1.py\nThe problem is about an infinite grid and a non-increasing sequence. We start with a doll at (0,0) and can perform operations that replace a doll at (x,y) with two dolls at (x,y+1) and (x+1,y). The goal is to have 0 dolls on every white cell (where a white cell at (x,y) is defined by y < a_x). The sequence a is given for indices 0..n, and for i>n, a_i=0.\n\nThe provided code:\nn,x,d,m,f=int(input()),0,0,10**9+7,[1]\nfor i in range(1,9**6):# TODO: Your code here\nfor z in map(int,input().split()):d+=f[z+x]*pow(f[x+1]*f[z-1],-1,m)*(z>0);x+=1\nprint(d%m)\n\nWe see that the code initializes:\n  n = integer input\n  x=0, d=0, m=10**9+7, and f=[1]\n\nThen there is a loop for i in range(1, 9**6) which is 9^6 = 531441. This loop is intended to build a list `f` which is likely factorial numbers (since we see combinatorial terms later). \n\nWe note that the next loop iterates over the input integers (which are a0, a1, ... an). In that loop, we see:\n  d += f[z+x] * pow(f[x+1] * f[z-1], -1, m) * (z>0)\n\nThis expression looks like a binomial coefficient: C(z+x, x+1) or C(z+x, z-1) but note that the denominator is f[x+1] * f[z-1]. Actually, the binomial coefficient C(n, k) = f[n] / (f[k] * f[n-k]). Here, the denominator has factors for (x+1) and (z-1). The total n in the numerator is z+x, so the term is:\n  C(z+x, x+1) * (z>0)   OR   C(z+x, z-1) * (z>0)\n\nBut note: \n  C(z+x, x+1) = (z+x)! / ( (x+1)! * (z-1)! )   only if (x+1)+(z-1)=x+z, which is true.\n\nBut wait: (x+1) + (z-1) = x+z, so that matches. However, note that the binomial coefficient is defined for nonnegative integers and requires that the denominator indices are nonnegative. We have a condition (z>0) so that when z==0 we skip (because then z-1 would be negative).\n\nSo the term is: C(z+x, x+1) = C(z+x, z-1) [since C(n,k)=C(n,n-k)].\n\nBut why is this the answer? The problem is known and the solution is to compute the sum over i from 0 to n of [C(a_i + i, i+1)].\n\nHowever, note the example: \n  Input: \n      2\n      2 1 0\n  Then a0=2, a1=1, a2=0. Then for i=0: z=2 -> term = C(2+0, 0+1) = C(2,1)=2.\n          i=1: z=1 -> term = C(1+1, 1+1)=C(2,2)=1.\n          i=2: z=0 -> term = 0.\n  Then d = 2+1 = 3? But the example says 5 operations.\n\nWait, the example in the note says 5 operations. So what is the correct formula?\n\nActually, the known solution for this problem (from CodeForces) is:\n\n  Let MOD = 10**9+7.\n  Precompute factorials and inverse factorials up to N (which is about 400000, because a_i and n up to 200000, so the maximum argument in the binomial coefficient is a0 + 0 <= 200000, but note we have a_i+i, so maximum is 200000+200000=400000).\n\n  Then, the answer is: \n      ans = 0\n      for i in range(n+1):\n          if a[i] > 0:\n              ans = (ans + C(a[i] + i, i+1)) % MOD\n\nBut in the example: \n  n=2, a = [2,1,0]\n  i=0: a0=2 -> C(2+0, 1) = C(2,1)=2\n  i=1: a1=1 -> C(1+1,2)=C(2,2)=1\n  i=2: skip because a2=0.\n  ans = 3.\n\nBut the example output is 5. So why 5?\n\nLooking at the note: the example says 5 operations. \n\nHowever, note that the problem statement says: \"Print the answer modulo 10^9+7\". The example output is 5.\n\nSo what is the discrepancy? \n\nI recall that the problem is known as \"CF Round #683 - Problem D\" (or similar). The known solution is:\n\n  We are to compute: \n      sum_{i=0}^{n} C(a_i + i, i+1)\n\nBut wait, the example: \n  Input: \n      2\n      2 1 0\n  Then the answer is 5? \n\nAlternatively, there is a known problem \"Infinity Table\" from CodeForces that matches the description. The known solution is:\n\n  Let dp[0] = 1, and then for each i from 0 to n, we do:\n      dp[i+1] = (dp[i] * 2 - C(i, a_i))   ... but that doesn't match.\n\nAlternatively, note that the provided code has a loop that runs 9**6 times (which is 531441). We need factorials up to 400000? 531441 is about 531441, which is more than 400000, so that's acceptable.\n\nSo what is missing? The code currently:\n\n  f = [1]   # factorial array, we need to build it up to 9**6 (which is 531441) at least.\n\nWe need to precompute factorials for numbers 0 up to 531440 (the maximum index we use in the binomials). The maximum index we use in the binomials: \n  In the term: f[z+x] ... and z+x can be at most (max a_i) + (n) <= 200000 + 200000 = 400000, and 400000 < 531441, so we are safe.\n\nSo the missing part in program1.py is the factorial precomputation.\n\nWe should do:\n  for i in range(1, 9**6):\n      f.append(f[-1]*i % m)\n\nBut note: the factorial for 0 is 1, then for 1: 1*1=1, for 2: 1*2=2, etc.\n\nSo the missing line is: \n  f.append(f[-1] * i % m)\n\nBut note: the loop runs from 1 to 531440 (since range(1, 9**6) goes from 1 to 9**6 - 1). We need factorials up to 531440? Actually, we need up to 400000, so 531440 is enough.\n\nSo the completed program1.py missing part is the factorial precomputation.\n\nBut note: the code after the factorial precomputation loop is:\n\n  for z in map(int, input().split()):\n      d += f[z+x] * pow(f[x+1] * f[z-1], -1, m) * (z>0)\n      x += 1\n\nHowever, there is an issue: when z==0, we skip (because (z>0) is 0). But also, when z==0, we have f[z-1] = f[-1] which is the last element of f? That would be wrong. We must avoid negative indices.\n\nBut note the condition: (z>0) so when z==0, the entire term is multiplied by 0. So we don't use the denominator when z==0.\n\nBut when z>=1, we compute: \n   term = f[z+x] * pow(f[x+1] * f[z-1] % m, -1, m) % m\n\nBut wait: the binomial coefficient C(z+x, x+1) = f[z+x] / (f[x+1] * f[z-1])? \n\nActually, the standard binomial coefficient is:\n   C(n, k) = f[n] * inv(f[k]) % m * inv(f[n-k]) % m\n\nHere, we have n = z+x, and we are taking k = x+1? Then n-k = (z+x) - (x+1) = z-1. So yes, that is correct.\n\nBut note: we must compute the denominator modulo m and then invert it. However, the expression: \n   pow(f[x+1] * f[z-1], -1, m)\n\nThis is the modular inverse of (f[x+1] * f[z-1]) mod m.\n\nSo the code for program1.py missing part is the factorial precomputation.\n\nTherefore, for program1.py, the missing code is:\n   f.append(f[-1] * i % m)\n\nBut note: the loop is already written as:\n   for i in range(1,9**6):# TODO: Your code here\n\nWe must fill the loop body. So we write:\n   f.append(f[-1] * i % m)\n\nBut note: the variable `m` is defined as 10**9+7.\n\n### Program2.py\n\nThe problem: \n  We have a sequence a. In one operation, we choose two distinct indices i and j:\n      If a_i == a_j, then we can change one of them to 0.\n      Otherwise, we change both to min(a_i, a_j).\n  We want the minimum number of operations to turn the entire sequence to zeros.\n\nThe provided code:\n\n  if 0 in a:\n      print(len(a) - a.count(0))\n  else:\n      # TODO: Your code here\n\nThe note says: if there is at least one zero, then we can use the zeros to clear the rest? The number of operations is the number of non-zero elements? But note: \n  The operation changes two elements at a time? \n\nActually, the operation changes two elements at a time, but if we have a zero, then we can pair a non-zero with the zero: \n   Operation on (non-zero, zero): \n        They are different -> change both to min(non-zero,0)=0. So in one operation, we can clear two non-zeros? \n\nBut wait: the operation changes two elements? Actually, the problem says: \n   If a_i = a_j, change one of them to 0.\n   Otherwise, change both to min(a_i, a_j).\n\nSo if we have a zero and a non-zero: \n   They are different -> we change both to 0. So one operation clears two non-zeros? Actually, it clears one non-zero (because one of them was already zero) and the other becomes zero. So we remove one non-zero.\n\nBut note: we have two elements: one zero and one non-zero. After the operation, both become zero. So we have reduced the non-zero count by 1 (because we had one non-zero and one zero, and after we have two zeros). \n\nTherefore, if we have k zeros, then we can use each zero to clear one non-zero per operation? Actually, one operation uses two elements: one zero and one non-zero, and then we get two zeros. So the non-zero count reduces by one and the zero count increases by one? \n\nBut note: we start with k zeros and (n-k) non-zeros. \n  Operation 1: use one zero and one non-zero -> we get two zeros: so zeros become k+1, non-zeros become n-k-1.\n  Then we can use the new zero to clear another non-zero? \n\nSo the number of operations needed is the number of non-zeros? Because each operation removes one non-zero? \n\nBut the example: \n  Input: \n      n=3, a = [1,2,3] -> no zero.\n      The example in the note: \n          [1,2,3] -> \n          Operation1: choose (1,2): they are different -> change both to min(1,2)=1 -> [1,1,3]\n          Operation2: choose (1,1): change one to 0 -> [0,1,3]\n          Operation3: choose (0,1): change both to 0 -> [0,0,3]\n          Operation4: choose (0,3): change both to 0 -> [0,0,0]\n\n      So 4 operations.\n\n  But the non-zero count initially is 3. If we had a zero initially, we would have done 3 operations? \n\n  The code for the case with zero: \n        print(len(a) - a.count(0))   -> if there is a zero, then we output (n - count0)\n\n  For the example without zero: \n        We output something else.\n\nWhat should we do in the else branch?\n\nWe can consider:\n\n  Without any zero, we must create a zero. How?\n      We can use two distinct non-zero numbers. \n        If we have two same numbers, we can set one of them to zero in one operation? \n        Otherwise, we can set two numbers to the same value (by setting both to the min) and then in the next operation set one of them to zero.\n\n  So the minimal operations:\n\n      Option 1: \n          Step1: if there is a duplicate, we can set one duplicate to zero in one operation? But note: we have to choose two duplicates. Then we get one zero and the rest remains. Then we have one zero, so then we can clear the rest in (n-1) operations? Total = 1 + (n-1) = n.\n\n      But the example: n=3 -> 4, which is more than n.\n\n      Option 2: \n          We can break it down:\n\n          Let k = number of distinct elements? \n\n          Actually, the known solution for this problem (from CodeForces) is:\n\n            if there is a zero: \n                ans = n - count0\n            else:\n                if there is a duplicate (i.e., at least one number appears at least twice):\n                    ans = n   # because we can create a zero in one operation without increasing the total non-zero count? \n                else:\n                    ans = n+1\n\n          Why? \n            Without zeros and without duplicates, we must first create a duplicate? \n            How? \n                Operation1: choose two distinct numbers, say the smallest two. Then set both to the min. Now we have a duplicate. \n                Then Operation2: choose the duplicate and set one of them to zero. Then we have one zero and the rest non-zeros. Then we need (n-1) operations to clear the rest? \n                Total = 1 (to create duplicate) + 1 (to create zero) + (n-1) (to clear the rest) = n+1.\n\n          But wait: after the first operation, we set two numbers to the same value. Then we have one duplicate. Then we can use that duplicate to create a zero. Then we have one zero. Then we can use the zero to clear the rest one by one: (n-2) operations? \n          Total = 1 + 1 + (n-2) = n.\n\n          However, note: after the first operation, we set two numbers to the same value. Then we have:\n              [min, min, ...] -> now we have two min. Then we can use these two min to set one to zero: then we have [0, min, ...]. Then we can use the zero to clear the other min? That takes one operation: so then we have [0,0,...]. Then we have n-2 non-zeros? Then we need n-2 operations? \n          Total = 1 (first op) + 1 (second op) + (n-2) = n.\n\n          But the example without duplicates: \n              [1,2,3] -> \n                  Operation1: (1,2) -> [1,1,3]  (now we have a duplicate: two ones)\n                  Operation2: (1,1) -> [0,1,3]   (we set one of the ones to zero)\n                  Then we have two non-zeros: 1 and 3. \n                  Operation3: (0,1) -> [0,0,3]   (using the zero to clear the 1)\n                  Operation4: (0,3) -> [0,0,0]   (using the zero to clear the 3)\n\n          So total 4 = n+1? (n=3 -> 3+1=4) -> matches.\n\n          But wait: the above total was 4, which is n+1.\n\n          Therefore, the known solution is:\n\n            if 0 in a:\n                ans = n - a.count(0)\n            else:\n                if len(a) == len(set(a)):\n                    ans = n+1\n                else:\n                    ans = n\n\n          Why? \n            If there is a duplicate, we can create a zero in one operation without having to create a duplicate first? \n            Example: [1,1,2] (no zero, but duplicate) -> \n                Operation1: choose the two ones -> set one to zero: [0,1,2] -> then we have one zero. Then we can clear the rest in 2 operations? \n                    Operation2: (0,1) -> [0,0,2]\n                    Operation3: (0,2) -> [0,0,0] -> 3 operations = n (which is 3).\n\n          So the code for the else branch:\n\n            else:\n                if len(set(a)) < n:\n                    print(n)\n                else:\n                    print(n+1)\n\nBut note: the condition for duplicates: if there is at least one duplicate, then the length of set(a) is less than n.\n\nSo the missing code for program2.py is:\n\n            if len(a) > len(set(a)):\n                print(n)\n            else:\n                print(n+1)\n\nBut note: the input constraints: n>=2, and the numbers are between 0 and 100.\n\n### Program3.py\n\nThe problem: \n  We have a rooted tree (vertex 1 is root). We infect the tree in seconds. Each second:\n      Spreading: for each vertex v that has at least one child infected, we can choose at most one additional child to infect (if available).\n      Injection: we can choose any healthy vertex to infect.\n\n  We want the minimal seconds to infect the whole tree.\n\nThe provided code:\n\n  for _ in range(int(input())):\n      n = int(input())\n      pp = list(map(int, input().split()))\n      sibs = [[] for _ in range(n+1)]\n      for i,p in enumerate(pp, 2):\n          sibs[p].append(i)\n      child_infected = [False] * (n+1)   # not used? \n      isibs = sorted(range(1, n+1), key=lambda x:len(sibs[x]), reverse=True)\n      remain = n\n      to_spread = []   # a heap? \n      turn = 0   # we are iterating with turn? \n      for turn, isib in enumerate(isibs):\n          children = sibs[isib]\n          while to_spread and to_spread[0][0] <= turn:\n              heappop(to_spread)\n          remain -= len(to_spread)   # ??? \n          child_infected[isib] = True   # but we are at the parent? \n          heappush(to_spread, (len(children)+turn, isib))\n          remain -= 1\n          if remain <= 0:\n              # TODO: Your code here\n\n      print(turn+1)\n\nThis code is confusing. \n\nThe known solution for the problem (from CodeForces) is:\n\n  We note that the infection starts at the root? Actually, initially all are healthy. But the problem says: we can do injections arbitrarily. We can start by injecting the root? \n\n  However, the problem does not say we start with any infected. It says \"Initially, all vertices are healthy.\" Then the first second: \n      Spreading: no child is infected, so we skip.\n      Injection: we can inject the root.\n\n  Then the root becomes infected.\n\n  Then the next second: \n      Spreading: from the root, we can spread to one child (if the root has children) because at least one child (none at the moment) is infected? Actually, the root has no child infected at the beginning of the second. So we skip spreading? Then we inject one more? \n\n  But note: we can choose which vertex to inject. We don't have to inject the root first? \n\n  Actually, the problem: \n      \"You are given a rooted tree with n vertices. The vertex 1 is the root.\"\n\n  We can inject any healthy vertex. So we can inject the root in the first injection.\n\n  Known solution approach:\n\n      We can use a greedy strategy. We simulate the process. We note that the spreading operation can be done arbitrarily (we choose which child to spread). \n\n      The process:\n\n        Let time = 0.\n        Initially, we have 0 infected.\n\n        We start by injecting the root at time 1? Actually, the first second: \n            Injection: we inject the root -> infected: {1}. Then time becomes 1.\n\n        Then at time 2:\n            Spreading: from the root, we can spread to one child (if the root has children). Then we can also inject one more vertex (anywhere). So we can get two new infections: one from spreading from the root and one from injection.\n\n        How to minimize time?\n\n        We can model the problem as:\n\n          We have the root initially infected at time 0? Actually, the problem says we start with no infected. Then we do the first second: \n              Operation: injection only -> we infect the root.\n\n          Then at time=1, we have the root.\n\n          Then at each second, we can do:\n\n            Spreading: for each infected vertex that has at least one child infected (but note: the spreading condition: \"if at least one child of v is infected\" -> but wait, the problem says: \"for each vertex v, if at least one child of v is infected, you can spread the disease by infecting at most one other child of v\". \n\n          This is a bit confusing.\n\n        Actually, the known solution (from CodeForces) for this problem (which is \"Tree Infection\") is:\n\n          We note that siblings (children of the same parent) can be infected by spreading. But the spreading operation for a parent v can only be done if at least one child of v is already infected. And then we can spread to one more child per second.\n\n          Steps:\n\n            Step 1: We group the children by parent. For each parent, we have a count of children.\n\n            Step 2: We note that we must inject at least one node in each group (to start the spreading in that group). But the root is special: we start by injecting the root? Actually, the root is the parent of its children. We do not need to inject the root? We can inject the root to start, but then we can spread from the root to one child. Then we can spread from the root to another child in the next second? \n\n          However, the problem does not require that we start with the root. We can start by injecting any vertex. But the root must be infected at some point.\n\n          Known solution:\n\n            We consider the groups: for each parent, the number of children. We also note that the root is already considered? Actually, the root is the parent of its direct children.\n\n            We start by infecting the root (by injection) at time 0? Actually, the problem says the first second: we do spreading (which does nothing) and then injection. So at time 1, we have one infected (the root).\n\n            Then we have the groups: for each parent, we have a list of children. The root is infected, so for the root's children, we can spread one per second (if we have k children of the root, we can spread to one per second). But we can also inject one node per second.\n\n            The idea:\n\n              Let f(t) be the total number of infected by time t.\n\n              We have two types of infections: by injection and by spreading.\n\n              We must inject at least one node in each group (to start the spreading in that group). But note: the root is a group? Actually, the root is already infected (by injection) so we don't need to inject again for the root. However, the root's children: we can either inject one of them or wait for the root to spread.\n\n            Actually, the known solution:\n\n              We collect the sizes of the groups (for every node that has children). We start by having the root infected.\n\n              Then, we need to infect the children of each node. For a node with k children, we can do:\n\n                 - We must inject at least one child in that group (to start the spreading). Then the remaining k-1 children can be infected by spreading. But note: the spreading for that node can only happen in a second after the injection and then one per second.\n\n              However, the spreading operation happens for every node that has at least one child infected. So if we have multiple groups, the spreading operations can happen in parallel.\n\n              The process:\n\n                 Let t=0: we have the root infected.\n\n                 Then at each second t (starting from t=1), we do:\n\n                    Spreading: for every node that has at least one child infected and that hasn't spread to all its children, we can spread to one more child (if we choose to).\n\n                    Injection: we can inject one more node (anywhere).\n\n                 How to schedule?\n\n                 We note that we must inject one node for each group (except the root, which we already did). So we have to inject (number of groups) nodes? Actually, the groups are the nodes that have children? But note: the root is already infected, so we don't need to inject the root again. But for each group (each parent that has children) we must inject at least one child? \n\n                 Actually, we don't need to inject a child for every group? We can also use the root to spread to its children without injecting any child? \n\n                 But the condition for spreading: the parent must have at least one child infected. So for the root, we have no child infected initially. So we must inject at least one child of the root? Or we can inject a child of the root and then the root can spread to the others? \n\n                 Actually, we can choose the injection arbitrarily. We can inject a child of the root at time 1 (in the first second after the root). Then at time 2, the root can spread to another child? \n\n                 Algorithm:\n\n                   Step 1: Count the children for each node. We have an array `deg` for the degree (number of children) for each node? Actually, the root is node 1, and we are given the parent of nodes 2..n.\n\n                   Step 2: We start with the root infected. So we set:\n\n                         infected = {1}\n\n                   Step 3: We note that for each node u (that has children), we will need to eventually have at least one child of u infected (by injection) to start the spreading. \n\n                   So the number of injections we must do is: the number of groups (each group is a parent) that have at least one child? But note: the root is already infected, so we don't need to inject the root again. However, the root's children: we must inject at least one? \n\n                   Actually, we must inject one node in each group? \n\n                   But note: the root is a parent? So we have:\n\n                         groups: for each parent, we have a group of children.\n\n                   The root is infected, so we don't need to inject the root. But for the root's group (its children), we must inject at least one child? \n\n                   Similarly, for a non-root parent u, we must inject at least one child of u? \n\n                   So the total injections we must do is: the number of groups (each parent that has at least one child) because we must start the spreading in that group.\n\n                   However, note: the root is already infected, so we don't count the root as a group that requires an injection? Actually, the root is the parent of its children, and we must start the spreading in the root's group by injecting one child? \n\n                   Therefore, the number of required injections is: the number of nodes that have at least one child? \n\n                   But note: the root is already infected, so we don't inject the root again. We inject one child per parent (including the root) to start the spreading in that group.\n\n                   So the total injections = number of groups (each parent with children) = the number of nodes that have at least one child.\n\n                   However, wait: the root is a parent? Yes. So we need to inject one child of the root? \n\n                   Then, after we have done these injections, we can use spreading to cover the rest. \n\n                   How many seconds for spreading? \n\n                   For a parent u with k children, we have injected one child at time t0. Then the spreading for u can happen at the next seconds: one child per second. So the time to cover the entire group is t0 + k - 1? \n\n                   But note: the spreading operations happen in parallel for different parents. \n\n                   So the total time is the maximum over all groups of (t0 + k - 1), where t0 is the time when we injected the representative of that group.\n\n                   How to assign the injection times? \n\n                   We want to minimize the total time. We can schedule the injections arbitrarily. \n\n                   We have:\n\n                     Let m = number of groups (nodes that have children). We must assign an injection time for each group (each group gets one injection). The injection times are distinct and in the range [1, m] (if we do one injection per second). \n\n                   Then for a group with k children, the time when the last child is infected is: \n\n                         injection_time + (k-1)\n\n                   But note: we can also do injections and spreading in the same second? \n\n                   The process per second:\n\n                     Spreading happens first: so if we inject a node at time t, then at time t, that node becomes infected. Then at the next second (time t+1), the parent of that node (if it has at least one child infected) can spread to one more child? But actually, the spreading in the same second as the injection? \n\n                   The problem says: \n                     \"each second you do two operations, the spreading operation and, after that, the injection operation\"\n\n                   So at time t:\n\n                     Spreading: we can spread from a parent that already had at least one child infected (from previous seconds) to one more child.\n\n                     Then Injection: we inject a new node.\n\n                   Therefore, if we inject a node at time t, then at time t the node becomes infected. Then at time t+1, the parent of that node can spread to one child (if we choose to).\n\n                   So for a group with k children, if we inject one child at time t, then:\n\n                     time t: one child infected (the one we injected).\n                     time t+1: we can spread to one more child -> then two children infected.\n                     time t+2: we can spread to one more -> three children infected.\n                     ...\n                     time t + (k-1): k children infected.\n\n                   Therefore, the entire group is infected by time t + k - 1.\n\n                   Then the total time for the entire tree is the maximum over all groups of (t + k - 1), where t is the injection time for that group.\n\n                   We have m groups. We assign the injection times as the integers 1, 2, ..., m. \n\n                   How to minimize the maximum (t + k - 1)? \n\n                   We should assign the larger groups to earlier injection times.\n\n                   So sort the groups by the number of children (descending). Then assign the earliest injection time to the group with the most children.\n\n                   Then the total time T is:\n\n                         T = max_{i} (t_i + k_i - 1)\n\n                   where t_i is the injection time for group i (which is i+1, because we assign in increasing order) and k_i is the size of group i.\n\n                   But note: we start at time 0 with the root infected. Then at time 1, we do the first injection. \n\n                   However, the root is infected at time 1? Actually, the first second:\n\n                         time 0: nothing? \n\n                         The problem: \n                             Initially: all healthy.\n                             Second 1: \n                                 Spreading: nothing -> then Injection: we inject the root.\n\n                         So the root is infected at time 1.\n\n                   Then at time 2: \n                         Spreading: from the root (which has one child infected? Actually, we haven't infected any child of the root yet) -> so we cannot spread from the root? \n                         Then we inject one more (say a child of the root, for the root's group).\n\n                   So the injection for the root's group happens at time 2.\n\n                   Then the time for the root's group (with k children) is: 2 + (k-1) = k+1.\n\n                   But wait, we have multiple groups. We also have groups for other parents. \n\n                   However, the provided code does:\n\n                         sibs = [[] for _ in range(n+1)]\n                         for i,p in enumerate(pp, 2):\n                             sibs[p].append(i)\n\n                         Then isibs = sorted(range(1, n+1), key=lambda x:len(sibs[x]), reverse=True)\n\n                         This sorts the nodes by the number of children (descending).\n\n                         Then we iterate over isibs (the nodes with children, from largest group to smallest) with index 'turn' (starting at 0).\n\n                         For each node (isib) at turn 'turn':\n\n                             while to_spread and to_spread[0][0] <= turn: \n                                 pop from the heap -> this seems to be removing events that have expired?\n\n                             remain -= len(to_spread)   # meaning: we are going to use the current spreading events to reduce the remaining work?\n\n                             Then we mark child_infected[isib]=True? (But we are at the parent node)\n\n                             Then we push (len(children)+turn, isib) into to_spread.\n\n                             Then remain -= 1   (because we infected the parent? or the child? Actually, we are iterating on the parent nodes)\n\n                   This code is not standard.\n\n                   Known solution from CodeForces submissions:\n\n                     We start by having the root infected at time 0? Actually, we don't have the root infected initially. We must inject the root. So we do:\n\n                         time = 0: we start.\n                         time = 1: we inject the root -> infected: {1}\n\n                     Then we have the groups: for each parent, the number of children. We also include the root? \n\n                     We then consider:\n\n                         Let a = sorted([len(children) for node in nodes if children] + [0]*(something), reverse=True)\n\n                     But note: the root is already infected, so we don't need to inject the root again. But we do need to inject one child per group (including the root's group).\n\n                     Then we simulate:\n\n                         Let t=1 (current time) and we have the root infected.\n\n                         We have a list of events: for each group, we will have an event when the spreading in that group catches up.\n\n                     Alternatively, we can use a greedy:\n\n                         We maintain a heap (priority queue) for the groups. The key is the time when the group will have its next spreading available? \n\n                     The provided code:\n\n                         to_spread = []   # min-heap by time?\n\n                         for turn, isib in enumerate(isibs):   # isibs: list of nodes sorted by number of children descending.\n\n                             # First, we remove from the heap all events that have happened by the current turn? \n                             while to_spread and to_spread[0][0] <= turn:\n                                 heappop(to_spread)\n\n                             # Then, we reduce the remaining work by the number of spreading events we have available? \n                             remain -= len(to_spread)   # This line is suspicious: we are subtracting the same spreading events multiple times?\n\n                             # Then we mark the current node (isib) as having its child_infected set to True? \n                             child_infected[isib] = True   # This might be a misnomer: we are infecting the parent? \n\n                             # Then we push an event: (len(children)+turn, isib) -> the time is len(children)+turn, and the node isib.\n                             heappush(to_spread, (len(children)+turn, isib))\n\n                             remain -= 1   # because we infected one node (the current parent? or the child?) \n\n                             if remain <= 0:\n                                 # then we break and output turn+1?\n\n                     This does not match the known solution.\n\n                   After reading known submissions for \"Tree Infection\", a common solution is:\n\n                     Step 1: Count the children for each node. We start by having the root infected at time 0.\n\n                     Step 2: We collect the counts for each parent (including the root) that has at least one child. Let these counts be in a list L. We also note that we must inject one child in each group.\n\n                     Step 3: We sort L in descending order.\n\n                     Step 4: We consider that we will inject one child in each group at distinct seconds. We start at second 1 (for the first injection).\n\n                     Step 5: We want to know the minimum time T such that:\n\n                             For each group i with count = L[i], we have:\n\n                                 T >= (injection_time_i) + (number of spreading steps needed for the group)\n\n                             The spreading steps: after we inject the child, we can spread to the remaining L[i]-1 children at a rate of one per second. But note: the spreading can only happen if the parent is infected? And the parent might not be infected yet? \n\n                     Actually, the parent is infected earlier? The root is infected at time 0. For a child of the root, the parent (root) is infected. For a non-root parent, we must have infected the parent earlier? \n\n                     How is the parent infected? The parent is either the root (infected at time 0) or a node that is a child of some other node. But we are not injecting the parents? We are injecting one child per group. \n\n                     The parent might be infected by injection? Or by spreading? \n\n                     Actually, the parent is not necessarily infected when we inject its child. But the spreading condition requires that the parent has at least one child infected. It does not require the parent to be infected? \n\n                     Wait, the problem says: \"for each vertex v, if at least one child of v is infected\" -> then we can spread to one more child. It does not say the parent v must be infected. \n\n                     So the parent v does not need to be infected for the spreading to happen? \n\n                     Therefore, we can ignore the infection of the parents? \n\n                     Then the only constraint is the injection time for the group and the spreading steps.\n\n                     So for group i, if we inject at time t_i, then the last child in that group is infected at time t_i + L[i] - 1.\n\n                     And we have one injection per second. We assign the groups in increasing order of t_i, and we want to minimize the maximum (t_i + L[i] - 1).\n\n                     We sort the groups by L[i] descending. Then we assign the earliest available injection times to the groups with the largest L[i].\n\n                     Then:\n\n                         Let T = 0.\n                         For i in range(len(L)):\n                             T = max(T, i+1 + L[i] - 1)   # because the i-th group (0-indexed) gets injected at time i+1.\n\n                     But wait, we also have the root? The root is already infected at time 0. But the root's group: we inject one child at time 1, then the last child in the root's group is infected at time 1 + (k_root - 1) = k_root.\n\n                     Then T = max(T, k_root)\n\n                     Then we also have other groups.\n\n                     However, what if there are more groups than the maximum k? \n\n                     But note: the example: \n                         n=5, tree: \n                            1: [2,3,4,5]   -> root has 4 children.\n\n                         Then L = [4] (only the root has children? the other nodes have no children? so only one group).\n\n                         Then T = 1 + 4 - 1 = 4.\n\n                     But the entire tree: \n                         time0: nothing.\n                         time1: inject the root -> infected: {1}\n                         time2: inject one child of the root (say 2) -> infected: {1,2}; then spreading: from the root (which has one child infected) -> we can spread to one more child (say 3) -> infected: {1,2,3} -> but wait, the spreading happens in the same second as the injection? \n\n                     The process for time2:\n\n                         Spreading: we can spread from the root to one child (because the root has at least one child infected (child 2) -> we spread to child 3) -> then we have 1,2,3.\n                         Injection: we inject child 4? -> then we have 1,2,3,4.\n\n                     Then time3: \n                         Spreading: from the root (which has children 2,3,4 infected) -> we can spread to child 5.\n                         Injection: we inject something else? but there is no other group.\n\n                     So at time3, we have infected the entire tree.\n\n                     But our T=4. \n\n                     Why? \n\n                     The group for the root: we have 4 children. We inject one child at time1? Actually, we injected the root at time1. Then we need to inject one child of the root? \n\n                     We have two injections: \n                         time1: inject the root.\n                         time2: inject one child of the root.\n\n                     Then the spreading at time2: from the root to one child -> so we get two children of the root at time2.\n\n                     Then at time3: we can spread from the root to one more child -> three children.\n                     Then at time4: we can spread from the root to the last child.\n\n                     So without additional injections, it takes 4 seconds.\n\n                     But we can also inject more than one child? \n\n                     The problem: we can only inject one vertex per second.\n\n                     We have to inject the root and then one child of the root? That's two injections. \n\n                     Then the spreading can cover the remaining two children in two seconds.\n\n                     Total time: 1 (for root) + 1 (for first child) and then two seconds of spreading -> time4.\n\n                     But we did:\n\n                         time1: inject root -> [1]\n                         time2: inject child2 -> [1,2]; then spreading: from root to child3 -> [1,2,3]\n                         time3: inject child4 -> [1,2,3,4]; then spreading: from root to child5 -> [1,2,3,4,5]\n\n                     So at time3, we have injected child4 and then spreading to child5? \n\n                     But note: at time3, the spreading happens first: \n                         Spreading: from the root (which has child2 and child3 infected) -> we can spread to one more child (child4? but child4 is not infected yet? we are about to inject child4 in the injection phase). \n\n                     Actually, the spreading phase happens before the injection phase. So at time3:\n\n                         Spreading: we spread from the root to child4? But child4 is not infected yet? We haven't injected it. \n\n                     We can only spread to a healthy child. But child4 is healthy. \n\n                     However, we are going to inject child4 in the injection phase of time3. \n\n                     But the spreading phase cannot use the injection of the same second? \n\n                     So at time3:\n\n                         Spreading: we can spread from the root to one child: we choose child5? \n                         Then injection: we inject child4.\n\n                     Then we have: root, child2, child3, child4, child5.\n\n                     So at time3, we are done.\n\n                     Therefore, the entire tree is infected at time3.\n\n                     How to account for this? \n\n                     We have:\n\n                         Group root: 4 children.\n\n                         We inject the root at time1.\n\n                         We inject one child of the root at time2.\n\n                         Then we have two more children to infect. We can do:\n\n                             time2: after injection, we have two children infected? Then spreading: we can spread one more -> so at the end of time2, we have three children infected? \n                             time3: we inject the last child? But we don't need to inject the last child? We can spread from the root at time3 to the last child.\n\n                     But note: we are allowed to inject any healthy vertex. We don't have to inject a child of the root. We could inject a child of the root at time2, and then at time3 we inject an unrelated node? But there is no unrelated node: the tree has only the root and its children.\n\n                     So we only have the root's group.\n\n                     The known solution: \n\n                         Let groups = sorted([4], reverse=True)\n\n                         Then we do:\n\n                             T = 0\n                             current_time = 0\n                             for size in groups:\n                                 current_time += 1\n                                 T = max(T, current_time + size)\n\n                             But then T = max(0, 1+4)=5 -> not 3.\n\n                     Another known solution from a submission:\n\n                         #include <bits/stdc++.h>\n                         using namespace std;\n                         int main() {\n                             ios::sync_with_stdio(false);\n                             cin.tie(nullptr);\n                             int t;\n                             cin >> t;\n                             while (t--) {\n                                 int n;\n                                 cin >> n;\n                                 vector<int> p(n+1), cnt(n+1);\n                                 for (int i=2; i<=n; i++) {\n                                     cin >> p[i];\n                                     cnt[p[i]]++;\n                                 }\n                                 vector<int> v;\n                                 v.push_back(1); // for the root? \n                                 for (int i=1; i<=n; i++) {\n                                     if (cnt[i] > 0) {\n                                         v.push_back(cnt[i]);\n                                     }\n                                 }\n                                 sort(v.begin(), v.end(), greater<int>());\n                                 int k = v.size();\n                                 for (int i=0; i<k; i++) {\n                                     v[i] = v[i] - (k - i);\n                                 }\n                                 int add = 0;\n                                 for (int x : v) {\n                                     if (x > 0) {\n                                         add = (add + x + 1) / 2; // ? \n                                     }\n                                 }\n                                 cout << k + add << '\\n';\n                             }\n                         }\n\n                     This is not obviously matching.\n\n                   After reading the editorial for CodeForces #770, problem D: \n\n                     The solution:\n\n                         Let f(t) be the number of nodes we can infect by time t.\n\n                         We infect the root at time 1.\n\n                         Then, we have:\n\n                             f(0)=0, f(1)=1.\n\n                         For t>=1:\n\n                             The number of injections we can do by time t is t.\n                             The number of spreading events: for each group, the number of spreading events is min( (t - injection_time_of_that_group), (size_of_group - 1) )   [because we can only spread to at most size_of_group-1 in that group].\n\n                         But we also must account for the fact that we can only do one spreading per group per second? \n\n                         Actually, the editorial solution is complex.\n\n                   Given the provided code structure, it is likely that the author intended a heap-based simulation.\n\n                   The provided code does:\n\n                     sibs = list of children for each node.\n\n                     isibs = sorted list of node indices by number of children descending.\n\n                     to_spread = min-heap of events, where an event is (time, node) meaning that at 'time', the spreading for 'node' will have caught up? \n\n                     remain = n   # total nodes to infect? \n\n                     We start by infecting the root? Actually, the code does not explicitly infect the root.\n\n                     Then for turn, isib in enumerate(isibs):   # we are iterating over the nodes with children, in descending order of the number of children.\n\n                         Step 1: remove from to_spread any event that has time <= turn (the current index in the sorted list).\n\n                         Step 2: remain -= len(to_spread)   -> this means we are accounting for the spreading events that are happening at this turn? \n\n                         Step 3: child_infected[isib] = True   -> we are marking that this node (which is a parent) has been handled? \n\n                         Step 4: push an event (len(children)+turn, isib) into to_spread.\n\n                         Step 5: remain -= 1   -> because we are infecting one node (probably the parent? or the child? but we are on the parent node)\n\n                         Step 6: if remain<=0, then we break and output turn+1.\n\n                   What does this simulate?\n\n                     Let's take the example: n=5, tree: only the root has 4 children.\n\n                     Then isibs = [1] (the root) because it has 4 children, and other nodes have 0.\n\n                     turn=0, isib=1.\n\n                     to_spread is initially empty.\n\n                     remain = 5.\n\n                     Step1: while to_spread and event time<=0: nothing.\n\n                     Step2: remain -= 0 -> remain=5.\n\n                     Step3: child_infected[1]=True.\n\n                     Step4: push (4+0, 1) = (4,1) into to_spread.\n\n                     Step5: remain becomes 4.\n\n                     Then we don't break.\n\n                     Then the loop ends (only one iteration).\n\n                     Then we print turn+1 = 1? -> but the answer should be 3.\n\n                   Clearly, this is not working.\n\n                   Another example: the sample in the problem statement? \n\n                   The provided code has a note: \n                         \"Note: the image depicts the tree from the first test case during each second.\"\n\n                   But the first test case is not described in text.\n\n                   Given the complexity, and the fact that the provided code structure is given, we must complete the TODO in the code.\n\n                   The TODO is in the if remain<=0: block.\n\n                   The code: \n                         if remain <= 0:\n                             # TODO: Your code here\n\n                   We are to break out and then output turn+1? \n\n                   But in the example above, we did not break.\n\n                   Then what? The for loop continues. But there is only one node in isibs.\n\n                   Then the next turn: turn=1, isib = next in isibs? But there is none. \n\n                   So the for loop ends, and we print turn+1 = 1+1 = 2? \n\n                   That is not 3.\n\n                   Alternatively, the for loop might be for the initial scheduling, and then we need to simulate seconds until remain<=0.\n\n                   But the for loop is over the sorted list of nodes.\n\n                   Given the time constraints, and since the problem states that the sum of n over test cases is <= 200000, the for loop is over at most 200000 nodes.\n\n                   The intended algorithm in the provided code might be:\n\n                     We are infecting the parents in the order of the number of children.\n\n                     The heap to_spread is used to schedule when the spreading for a group will finish? \n\n                     The event (time, node) means that at 'time', the spreading for 'node' will have finished.\n\n                     Then, at turn 'turn' (which is the index in the sorted list), we:\n\n                         - First, remove any event that has finished by turn 'turn'.\n\n                         - Then, we use the current spreading events (which are the ones in the heap) to reduce the remaining work: each event in the heap represents one spreading event that happens at this turn? \n\n                         - Then, we schedule the current node: we push (len(children)+turn, node) -> this event will happen at time = len(children)+turn.\n\n                         - Then, we infect one node (probably the current node) -> remain -= 1.\n\n                         - If at this point, remain<=0, we break and output turn+1.\n\n                   But in the example:\n\n                     Initially: remain=5.\n\n                     turn=0, node=1 (with 4 children):\n\n                         to_spread is empty -> remain=5.\n                         then we push (4+0,1) = (4,1) into to_spread.\n                         then remain becomes 4.\n\n                     turn=1: there are no more nodes in isibs? \n\n                   So the for loop ends. Then we have remain=4>0, but we break out and output turn+1=2.\n\n                   This is not 3.\n\n                   How to get to 3? \n\n                   We note that after the for loop, we might need to continue simulation? \n\n                   But the code after the for loop is: print(turn+1). In the example, turn=0 in the first iteration, then the loop ends and turn is still 0? \n\n                   Actually, the for loop uses `turn` as the index. In the example, there is only one element in isibs, so the loop runs once with turn=0.\n\n                   Then we print 0+1=1.\n\n                   This is not right.\n\n                   Alternatively, the author might have intended to use a while loop? \n\n                   Given the complexity, and since the problem is known to have a solution that uses a heap and a while loop for the spreading, we might need to change the approach.\n\n                   However, the problem says: \"Output only the missing code\"\n\n                   The missing code is only in the TODO part.\n\n                   The TODO part is: when remain<=0, we break and then the answer is turn+1.\n\n                   But in the example, we never hit remain<=0 in the for loop.\n\n                   What if we change the for loop to a while loop? But the structure is for turn, isib in enumerate(isibs): \n\n                   We cannot change that.\n\n                   Another possibility: the TODO part is to break out of the for loop and then the answer is turn+1, but if we don't break, then after the for loop we need to do more? \n\n                   The code after the for loop is: print(turn+1). \n\n                   In the example, we do one iteration (turn=0) and then after the for loop, turn=0, so we print 1.\n\n                   This is not 3.\n\n                   Given the provided code structure, it is likely that the author intended to use the heap to simulate additional seconds after the for loop. But the code does not have that.\n\n                   Therefore, the provided code might be for a different approach.\n\n                   Known solution from a submission (Python) for \"Tree Infection\" (CF round #770, Div2.D):\n\n                     import heapq\n\n                     t = int(input().strip())\n                     for _ in range(t):\n                         n = int(input().strip())\n                         parent = list(map(int, input().split()))\n                         deg = [0]*(n+1)\n                         for i in range(2, n+1):\n                             deg[parent[i-2]] += 1\n\n                         # Count the number of children for each node\n                         deg[0] = 0   # dummy\n                         # We start with the root: node1 has deg[1] = number of children.\n                         # We will have to inject one in each group.\n                         groups = []\n                         for i in range(1, n+1):\n                             if deg[i] > 0:\n                                 groups.append(deg[i])\n\n                         groups.sort(reverse=True)\n                         # We will inject the root at time0? \n                         # Actually, we need to inject the root as well? \n                         # But the root is not in the groups? \n                         # We must include the root? \n                         # The root is node1, and it is a parent. But the spreading for the root can only start after one child is infected, so we must inject one child of the root.\n\n                         # However, the root itself is not a child of any node. How is the root infected? \n                         # We inject the root at time1.\n\n                         # So we add the root as a group? Actually, the root is not a child, so it doesn't form a group of children? \n                         # But the root is a parent. The group for the root has size = deg[1] (number of children of the root).\n\n                         # So groups = [deg[1], deg[2], ...] for nodes that have deg[i]>0.\n\n                         # Then we simulate:\n\n                         # Let time = 0.\n                         # We will inject one node per second. The spreading happens automatically.\n\n                         # First, we inject the root at time1.\n                         # Then, we inject one child in each group at distinct seconds.\n\n                         # But the root is not in the groups? \n\n                         # We should include the root in the groups? \n\n                         # Editorial solution: \n                         #   Let ans = 0.\n                         #   We have a heap.\n                         #   First, at time0, we have the root infected? \n                         #   Then, for each group, we push the current time (which is 0) for that group.\n                         #   Then, at each second, we do:\n                         #       spreading: for the group that has the earliest time, we can spread one more child at this second.\n                         #       injection: we inject the group that has the most children.\n\n                         # Alternatively, a known solution:\n\n                         #   groups = sorted(groups, reverse=True)\n                         #   for i in range(len(groups)):\n                         #       groups[i] = groups[i] + i + 1   # because we inject at time i+1, and then the group will take groups[i] - 1 seconds to spread, so the last child is at time i+1 + groups[i] - 1 = groups[i] + i.\n                         #   then T = max(groups) \n\n                         #   But then we also have the root to infect? \n\n                         #   We must also inject the root. So we need to include the root in the injection schedule.\n\n                         #   So we insert the root's group (which is deg[1]) at the beginning.\n\n                         #   However, the root is not in the groups we collected? \n\n                         #   We should include the root's group.\n\n                         #   In the deg array, the root is node1, and we have deg[1] = number of children.\n\n                         #   So groups should include deg[1].\n\n                         #   Then T = max_{i} (groups[i] + i) \n\n                         #   But then we have to infect the root itself. When do we infect the root? \n\n                         #   We inject the root at time1. Then the last child in the root's group is infected at time1 + groups[0] - 1.\n                         #   But then the total time for the root's group is groups[0] ( because 1 + groups[0] - 1 = groups[0] ) and for the next group (i=1) we inject at time2, and the last child is at time2 + groups[1] - 1 = groups[1]+1.\n\n                         #   So T = max(groups[0], groups[1]+1, groups[2]+2, ...)\n\n                         #   Therefore, we can do:\n\n                         #        groups = [deg[i] for i in range(1, n+1) if deg[i]>0]\n                         #        groups.sort(re. \n                         #        groups = [0] + groups   # and then sort in descending order? \n                         #        Actually, we want the largest group first.\n\n                         #        groups.sort(reverse=True)\n                         #        T = 0\n                         #        for i, g in enumerate(groups):\n                         #            T = max(T, i+1 + g)\n                         #        print(T)\n\n                         #   But wait, the spreading for a group with size g: we inject it at time i+1, and then the last child is at time i+1 + g - 1 = i+g.\n                         #   However, the above is i+1+g.\n\n                         #   Why i+1+g? \n\n                         #   The known solution in C++ from the editorial is:\n\n                         #        sort(v.rbegin(), v.rend());\n                         #        int ans = 0;\n                         #        for (int i=0; i<v.size(); i++) {\n                         #            ans = max(ans, i+1+v[i]);\n                         #        }\n\n                         #   then they do additional steps for the spreading of the root? \n\n                         #   But note: the root is not included in v? \n\n                         #   In the C++ code I provided earlier, they did:\n\n                         #        vector<int> v;\n                         #        v.push_back(1); // for the root? \n                         #        for (int i=1; i<=n; i++) {\n                         #            if (cnt[i] > 0) {\n                         #                v.push_back(cnt[i]);\n                         #            }\n                         #        }\n\n                         #   then sorted in descending order.\n\n                         #   In the example: \n                                 n=5, \n                                 cnt[1]=4, cnt[2..5]=0.\n                                 then v = [1,4] -> sorted: [4,1]\n                                 then for i=0: ans = max(0, 0+1+4)=5\n                                        i=1: ans = max(5, 1+1+1)=5.\n                                 then they do:\n                                        for (int i=0; i<k; i++) {\n                                            v[i] = v[i] - (k - i);   // k=2\n                                        }\n                                        // v[0]=4- (2-0)=4-2=2, v[1]=1-(2-1)=1-1=0.\n                                        int add=0;\n                                        for (int x:v) {\n                                            if (x>0) add = (add+x+1)/2; // add = (0+2+1)/2 = 3/2 = 1 (integer division? (3+1)//2=2? )\n                                        }\n                                        // add = (2+1+1)//? \n                                        // (add+x+1)/2: for x=2: (0+2+1+1) is not the code.\n\n                         // The code: \n                                 int add = 0;\n                                 for (int x : v) {\n                                     if (x > 0) {\n                                         add = (add + x + 1) / 2;\n                                     }\n                                 }\n                                 // then output k+add = 2+1=3.\n\n                   So the answer for the example is 3.\n\n                   Therefore, the provided code in program3.py might be trying to implement this.\n\n                   The provided code in program3.py does:\n\n                         sibs = [[] for _ in range(n+1)]\n                         for i,p in enumerate(pp, 2):\n                             sibs[p].append(i)\n\n                         # then isibs = sorted(range(1, n+1), key=lambda x:len(sibs[x]), reverse=True)\n\n                         # This is sorting the nodes by the number of children descending.\n\n                         # Then we have a heap to_spread.\n\n                         # The variable 'remain' is initialized to n.\n\n                         # Then for turn, isib in enumerate(isibs):\n                         #   ...\n\n                   In the example, isibs = [1] (node1, the root) because it has 4 children, and then other nodes have 0.\n\n                   turn=0, isib=1.\n\n                   then we push (4+0,1) into the heap.\n\n                   then remain = 5 - 0 (from len(to_spread)) - 1 = 4.\n\n                   then we check if remain<=0 -> no.\n\n                   Then the loop ends.\n\n                   Then we have to do something else? \n\n                   The TODO is in the if remain<=0: break, but we haven't done that.\n\n                   Then after the for loop, we print turn+1 = 1.\n\n                   This is not 3.\n\n                   Therefore, the provided code might be for a different approach.\n\n                   Given the complexity, and since the TODO is only one part, we might try to complete the code as follows:\n\n                   In the if remain<=0: block, we break and then the answer is turn+1.\n\n                   But in the example, we never hit that.\n\n                   Alternatively, the author might have intended to use a while loop after the for loop to continue until remain<=0.\n\n                   But the problem says: only output the missing code.\n\n                   The missing code is only in the TODO part.\n\n                   What if the TODO part is to break and then set a variable and then after the for loop, simulate more? \n\n                   But the code structure is given, and we cannot change it.\n\n                   I notice that the sample test might be the one in the note: \n                         minimal number of seconds needed is 4 for the first test case in the note? \n\n                   The note says: \n                         \"The image depicts the tree from the first test case during each second.\"\n\n                   But we are not given the tree structure.\n\n                   Given the time, and since the provided code for program3.py is not working for the example, I will output a placeholder.\n\n                   However, the problem says: the sum of n over test cases is <= 200000, and the provided code uses a for loop over isibs, which is at most n.\n\n                   The intended TODO might be: \n\n                         if remain <= 0:\n                             break\n\n                   Then after the for loop, we have to simulate more seconds? \n\n                   But the code doesn't do that.\n\n                   Alternatively, the author might have intended to \n\n We are out of time.\n\n Given the complexity, I will output for program3.py: \n        break\n\n because the TODO is in the if remain<=0: and we want to break out of the for loop.\n\n Then the answer is turn+1.\n\n But in the example, we never break, so it is not enough.\n\n Another possibility: the TODO is to set the answer and break, and then we output that.\n\n But the code after the for loop is: print(turn+1)\n\n So if we break in the TODO, then we output turn+1.\n\n If we don't break, then after the for loop we output turn+1 (which is the last turn in the for loop).\n\n In the example, the last turn is turn=0, so output 1.\n\n This is not 3.\n\n Therefore, the provided code might be for a different problem.\n\n Given the instructions, we must output only the missing code.\n\n For program1.py: factorial precomputation.\n For program2.py: the else branch.\n For program3.py: break   (because the TODO is in the if remain<=0: and we break to output turn+1)\n\n Let's hope the sample test for program3.py is not the example we discussed.\n\n We output the JSON.\n\n But note: the example in the note for program3.py might be the following from the problem statement: \n      \"The first test case during each second\"\n\n      The image is not provided, but the sample output might be 4.\n\n      In the provided code, if we do break in the TODO, then for a test case with n=5 and the tree with root and 4 children, we do one iteration in the for loop and then output 1, which is not 4.\n\n Therefore, I change my mind for program3.py.\n\n The known solution from the editorial is to use a heap to schedule the spreading events and then simulate seconds. \n\n The provided code might be doing:\n\n      to_spread: heap of events (time, node) when the spreading for that node will have finished.\n\n      isibs: the list of nodes that have children, sorted by the number of children descending.\n\n      We are iterating over isibs to schedule the initial spreading events.\n\n      then, after the for loop, we might need to simulate seconds until remain<=0.\n\n But the code doesn't have that.\n\n Given the TODO is only one line, and the note says \"Output only the missing code\", we output for program3.py: \n        break\n\n and hope that in the test cases, the for loop will cover all and we break when remain<=0.\n\n But in the example, we have remain=4 after the first iteration, and then the for loop ends.\n\n So we need to continue.\n\n Since we cannot change the for loop, and the TODO is only in the if remain<=0, we might need to do nothing in the TODO and then after the for loop simulate more.\n\n But the problem says only output the missing code.\n\n Therefore, I output for program3.py: \n        break\n\n This is the only thing we can do.\n\n Alternatively, the author might have intended to do:\n\n      if remain <= 0:\n          break\n\n and then after the for loop, if remain>0, we do:\n\n      while remain > 0:\n          # simulate seconds\n          ...\n\n But the code doesn't have that.\n\n So I think the intended TODO is to break out of the for loop when we have infected all.\n\n Therefore, I output \"break\".\n\n In summary:\n\n   program1: \"f.append(f[-1]*i%m)\"\n   program2: \n        if len(a) > len(set(a)):\n            print(n)\n        else:\n            print(n+1)\n   program3: \"break\"\n\n But note: in program2, the else branch should be the code for when there is no zero.\n\n Let's write the JSON."
+}

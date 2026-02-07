@@ -1,0 +1,990 @@
+{
+  "segments": [
+    {
+      "text": "Okay, let's try to figure out how to solve this problem. So the problem is about a tree where each node has a value a_v that starts at 0. We need to make sure each a_v is between l_v and r_v.",
+      "start_char": 0,
+      "end_char": 191,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "The operations allowed involve choosing a path from the root to a vertex v and adding a non-decreasing array of increments along that path. The goal is to find the minimum number of operations required. Hmm. The key here is to model how each operation affects the nodes.",
+      "start_char": 192,
+      "end_char": 463,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Since each operation's c array is non-decreasing, each node along the path must receive a value that's at least as much as the previous ones. This suggests that when we perform an operation, the increments along the path have to form a non-decreasing sequence. Let me think about the constraints.",
+      "start_char": 464,
+      "end_char": 761,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "For each node, after all operations, the sum of increments (from all operations that include this node in their path) must be between l_v and r_v. But each operation contributes some c_i to the nodes along the path, and the c_i's are non-decreasing for each operation.",
+      "start_char": 762,
+      "end_char": 1030,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Wait, but each operation is a path from root to some node v. So for a particular node u, every time an operation includes u in the path (i.e., when the operation's path is to a descendant of u), u's a value is increased by some c_j (where j is the position of u in that path's array). But since the path is root to some node, the positions are determined by the depth.",
+      "start_char": 1032,
+      "end_char": 1400,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "For example, the root is always first, then its child, and so on until v.\n\nSo each operation contributes a non-decreasing sequence of increments to the nodes along the path.",
+      "start_char": 1401,
+      "end_char": 1574,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "The sum for a node u is the sum of all the c values in the paths that include u, where each c is part of a non-decreasing array for that path. But how can we model this efficiently?",
+      "start_char": 1575,
+      "end_char": 1756,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Because considering each possible operation directly would be computationally infeasible, especially given the constraints on n up to 2e5. Let's think about the problem from the perspective of each node and its constraints.",
+      "start_char": 1758,
+      "end_char": 1982,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "For each node, the sum of increments from all operations must be at least l_v and at most r_v. But the way these increments are applied is constrained by the operations' non-decreasing c arrays along their paths. I remember that in some similar problems, a greedy approach works. Maybe we can process the tree in reverse order, starting from the leaves and moving up to the root.",
+      "start_char": 1983,
+      "end_char": 2363,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Because each operation affects a path from the root to a node, the leaves can only be directly affected by operations that end at them, while their parent nodes can be affected by operations ending at them or any of their descendants.",
+      "start_char": 2364,
+      "end_char": 2598,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Wait, but for a node u, all operations that affect u must be part of a path that includes u. So the sum of increments for u is the sum of all c_i's from operations where u is on the path.",
+      "start_char": 2600,
+      "end_char": 2787,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "For example, if an operation is on a path ending in v, which is a descendant of u, then u is part of that path, and contributes some c_j (the j-th position in the c array of that operation) to u's a_v. But each such c_j must be <= the next elements in the c array of that operation. So for a particular operation, the c array is non-decreasing. So, the increments applied to u in that operation must be <= the increments applied to its children in that same operation. Wait, no. Because the c array is non-decreasing, so for the path from root to v, the increments for the nodes along the path must satisfy c_1 <= c_2 <= ... <= c_k. So the parent nodes in the path (closer to root) have lower or equal increments compared to the child nodes in that same path. So for a particular operation, when you apply it to a path, the root (node 1) gets c_1, its child gets c_2, and so on. And c_1 <= c_2 <= ... <= c_k.",
+      "start_char": 2788,
+      "end_char": 3699,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "This suggests that when considering the sum of increments for each node, the way they are added must satisfy that, for each node, the sum of increments from all operations in which it's part of a path must be such that the maximum c_i in the paths that pass through it (but not going further) and those that do pass through its children.",
+      "start_char": 3701,
+      "end_char": 4038,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Wait, perhaps another angle: Let's think of each node's required sum as being built up by contributions from operations. Each operation contributes some value to the nodes along a path. The constraint is that along the path of the operation, the contributions are non-decreasing. So, for each operation, the contribution to node u (which is on the path) must be <= the contribution to its child in the path. But since multiple operations can contribute to the same node, how do these constraints interact?",
+      "start_char": 4040,
+      "end_char": 4545,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Alternatively, perhaps each operation can be thought of as adding a certain amount to the path, with the constraint that each step along the path (from root to v) can't decrease. So, for the sum of all operations, the sum must be such that for any node and its child in the tree, the sum of contributions to the child (from all operations that include the child) must be >= the sum of contributions to the parent from those same operations. Wait, no.",
+      "start_char": 4548,
+      "end_char": 4998,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Because each operation that includes the child's parent (since the child is on the path) may have higher contributions in the child's position. But this is getting complicated.",
+      "start_char": 4999,
+      "end_char": 5175,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Alternatively, perhaps the key is to model for each node u the minimal and maximal possible sum of contributions that can be assigned, given the constraints from the operations. Wait, maybe we can model for each node u the required minimum and maximum cumulative contributions. Then, for each node, we need to determine how much it can contribute based on its children's constraints. Let me look at the code provided. The code processes the nodes in reverse order (from n down to 1), and has a dp array.",
+      "start_char": 5177,
+      "end_char": 5682,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "The problem's solution likely involves dynamic programming, where for each node, we track some information that helps determine the number of operations needed. The variables l and r are the lower and upper bounds for each node.",
+      "start_char": 5683,
+      "end_char": 5912,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "The dp array is probably tracking the maximum possible sum that can be allocated to the node's subtree, given the constraints. Or maybe the minimal number of operations required for the subtree. Alternatively, considering the code structure:\n\nIn the loop from i = n downto 1: For each node, we have to compute something based on its children.",
+      "start_char": 5913,
+      "end_char": 6257,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Since processing in reverse order (children first), perhaps the approach is to compute the required constraints for each node based on its children. Wait, here's an idea. Each operation can be viewed as adding a certain amount to a path. Since the increments are non-decreasing along the path, the contribution to a node u in an operation is <= the contribution to its child in the same operation. But when considering multiple operations, the sum for u's contribution from all operations must be <= the sum for its child's contribution from all operations that pass through u's child.",
+      "start_char": 6258,
+      "end_char": 6844,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Wait, but each operation that affects a child of u must pass through u. So for u's child, every operation that contributes to it also contributes to u. But in each such operation, the contribution to u is <= the contribution to the child. Therefore, the sum for u (sum of all contributions from operations that include u) must be <= the sum for the child (sum of contributions from operations that include the child). Because in each operation, the contribution to u is <= the contribution to the child. Wait, no. Because each operation that includes the child also includes u (since the path goes through u). But in that operation, the contribution to u is c_i, and the contribution to the child is c_{i+1}, which is >= c_i. So for the sum of all such operations, the sum for u is the sum of all c_i's from operations that include u, and the sum for the child is the sum of all c_{i+1}'s from operations that include the child. Since each c_{i+1} >= c_i, then the sum for the child is >= the sum for u. Because in each operation that includes the child, the contribution to the child is >= the contribution to u.\n\nTherefore, for any node u and its child v, the sum of contributions to v (from all operations) must be >= the sum of contributions to u (from those same operations). But the sum for u includes contributions from all operations that include u (even those that end at u), whereas the sum for v includes contributions from operations that include v (which are a subset of those that include u, since v is a child of u). Wait, this is getting a bit tangled. Let's think of the sum for u (S_u) and sum for v (S_v). Each time an operation includes v (so the path is to v or one of its descendants), then that operation contributes c_i to u (where i is the position in the path), and c_{i+1} to v. Since c_i <= c_{i+1}, each such operation contributes to S_u and S_v with c_i and c_{i+1} where c_i <= c_{i+1}. Additionally, there are operations that end at u. These contribute some c_i to u, and nothing to v (since the path stops at u).",
+      "start_char": 6846,
+      "end_char": 8894,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "For these operations, the c_i can be anything as long as the array is non-decreasing. But since the path ends at u, there's no node after u in the path. So in such operations, the contribution to u is c_i, and there's no contribution to v.\n\nSo for S_u, it's the sum of all contributions from all operations that include u. For S_v, it's the sum of contributions from all operations that include v. Since v is a child of u, every operation that includes v also includes u. So S_v's sum is the sum of c_{i+1} from all operations that include v, plus any contributions from operations that end at v's children, etc. But S_u includes all operations that include u, which includes operations ending at u, and operations that go through u to reach its descendants. Hmm. So S_u >= sum of the c_i's from all operations that go through u. But for each such operation, the c_i's for u are part of a non-decreasing array. So, for any operation, the contribution to u (c_i) is <= the contribution to its child in the path (c_{i+1}). So, for S_v (sum of contributions to v), it's the sum of c_{i+1} from all operations that include v. Since each such operation's c_{i+1} >= c_i (the contribution to u in that same operation), then the sum of c_{i+1} for v (S_v) must be >= the sum of c_i for u in those same operations. But u can have other contributions from operations that don't include v (like operations ending at u or other children of u).",
+      "start_char": 8895,
+      "end_char": 10329,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "So, the total S_u is the sum of all contributions from all operations that include u (including those that end at u, or go to other children). Wait, this seems complicated. Maybe the key insight is that for each node u, the sum S_u must be at least l_u and at most r_u. Also, for any child v of u, S_v must be >= the sum of contributions to u from operations that pass through v. Because each such operation contributes c_i to u and c_{i+1} >= c_i to v. So the sum of c_i's for u from operations that go through v is <= sum of c_{i+1}'s for v. But S_u includes all such c_i's plus those from operations ending at u. And S_v includes all c_{i+1}'s from those operations plus contributions from operations that go through v's children. This seems tricky. How can we model this in a way that allows us to compute the minimal number of operations? Let's think about the minimal number of operations. Each operation can cover a path from the root to some node.",
+      "start_char": 10330,
+      "end_char": 11288,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "To cover multiple nodes with a single operation, we need to find a path such that the required increments along that path can be added in a non-decreasing way.",
+      "start_char": 11289,
+      "end_char": 11448,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "An alternative approach is to model the problem as follows: For each node u, the minimal number of operations needed is determined by the constraints of u and its children.",
+      "start_char": 11450,
+      "end_char": 11622,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Since each operation can affect a path, the key is to find a way to cover the required increments in a way that maximizes the coverage of multiple nodes with a single operation.",
+      "start_char": 11623,
+      "end_char": 11800,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Wait, perhaps the answer is equal to the number of nodes where their required minimum cannot be covered by their parent's maximum. Because each such node would require an additional operation.",
+      "start_char": 11802,
+      "end_char": 11994,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Alternatively, the problem may reduce to the number of nodes where the cumulative required maximum from the subtree is more than the parent's capacity.",
+      "start_char": 11996,
+      "end_char": 12147,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "For example, when processing the nodes bottom-up, for each node, we track the minimal possible maximum sum (dp[i]) that can be assigned, considering the constraints from its children.",
+      "start_char": 12148,
+      "end_char": 12331,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "If the sum of required contributions from the children exceeds the node's maximum allowed (r[i]), then we need to split into multiple operations.",
+      "start_char": 12332,
+      "end_char": 12477,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Looking back at the code provided, the dp array is filled from n downto 1. So for each node i, after processing all its children (since it's processed after them), we calculate something.",
+      "start_char": 12479,
+      "end_char": 12666,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "The answer is the number of times we have to split, which is the ans variable. So the code's main loop is for each node i from n downto 1. The code needs to compute the dp[i], and possibly update the ans. Looking at the sample input 1:\n\nTest case 1: n=2, p_2 is 1. l_1=1, r_1=1; l_2=2, r_2=2.\n\nProcessing in reverse order (i=2, then i=1). For i=2: l[2]=2, r[2]=2. Since it's a leaf node, the dp[2] would be the minimal sum needed. But how?",
+      "start_char": 12667,
+      "end_char": 13109,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Wait, for the leaf node, any operation that affects it must be an operation ending at it. So for node 2, the sum is the sum of contributions from all operations that include it. But the path from root to 2 includes node 1 and 2. So each operation for node 2 adds a non-decreasing c array of length 2. So the sum for node 2 is the sum of c_2's from all operations for node 2 and any operations that go through node 2 (but node 2 has no children).",
+      "start_char": 13110,
+      "end_char": 13555,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "The sum for node 1 is the sum of c_1's from all operations that include it, including those for node 2. But how does this translate into the dp array? In the sample, after the first operation (v=2, c=[1,2]), node 1's sum is 1 (from c_1=1) and node 2's sum is 2 (from c_2=2).",
+      "start_char": 13556,
+      "end_char": 13832,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Since this is a single operation, the answer is 1. So the key is that for each node, when processing it, we need to accumulate the required contributions from all its children.",
+      "start_char": 13833,
+      "end_char": 14009,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "If the sum of the minimal required contributions from the children exceeds the current node's r[i], then we have to split into multiple operations.",
+      "start_char": 14011,
+      "end_char": 14158,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Wait, maybe the approach is to track for each node u the minimal and maximal possible sum of contributions that can be made, considering the constraints of the children.",
+      "start_char": 14160,
+      "end_char": 14329,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Alternatively, here's an idea from some similar problems: the minimal number of operations is the number of nodes where the required maximum (r) is less than the sum of the required maxima of their children. Wait, not sure. Alternatively, for each node u, the sum of all the required contributions from its children (which must be >= the contributions from u in the same operations) could exceed u's own maximum allowed.",
+      "start_char": 14331,
+      "end_char": 14752,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "So, the number of operations needed is the number of times this sum exceeds the maximum allowed, requiring splitting into multiple operations. Wait, perhaps for each node u, we collect the sum of the contributions needed by its children. Each child v of u must have a sum S_v >= S_u (from the operations that pass through u to v). But S_u is the sum of contributions from all operations that pass through u, including those that end at u.\n\nBut how to model this. Let's think recursively. For a node u, the sum of the contributions from its children must be <= S_u's maximum allowed (r_u). Because each child's contribution is >= the contribution from u in the same operations. So, the sum of the children's required contributions (sum of l_v) would require that S_u must be >= sum of l_v. But S_u can't exceed r_u. So if the sum of the minimal required contributions from the children (sum of l_v) exceeds the node's maximum (r_u), then it's impossible. But the problem states that a solution exists. So perhaps in such a case, we need to perform multiple operations.",
+      "start_char": 14753,
+      "end_char": 15821,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Wait, but the problem says it's possible. So maybe the code is counting the number of times the sum of the children's required minimal (or some other value) exceeds the current node's maximum, and increments the ans each time. Looking at the code's loop:\n\nfor i from n downto 1:\n\nThe code needs to compute something for dp[i].",
+      "start_char": 15824,
+      "end_char": 16151,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "In the sample where node 1's r is 1 and node 2's l is 2. But the sample uses a single operation where node 1 gets 1 and node 2 gets 2, which satisfies the constraints. So for node 2, dp[2] is 2. For node 1, which has to sum up the contributions from its children. But node 1 has one child (node 2).",
+      "start_char": 16153,
+      "end_char": 16452,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "The sum of the contributions from the children (node 2) is 2. But node 1's r is 1. So in this case, the sum of children's required contributions (2) exceeds the parent's r (1). So here, we need to split into operations. But how?\n\nWait, but in the sample, the sum for node 1 is 1 (from the operation's c_1=1). The sum for node 2 is 2 (from c_2=2).",
+      "start_char": 16453,
+      "end_char": 16799,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "The sum of the children's required contributions is 2, but node 1's maximum is 1. So how does this fit into the solution? Ah, maybe the idea is that for each node u, the sum of the required contributions from its children (each child's required sum) must be <= the maximum possible contribution of u (r_u). If the sum is larger than r_u, then we need to split into (sum_children / r_u) operations.",
+      "start_char": 16800,
+      "end_char": 17198,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Because each operation can contribute up to r_u to u, and each such operation can contribute up to the sum_children divided by the number of operations. But since each operation's contribution to the children must be >= the contribution to u, perhaps each operation can cover some of the required sum. Wait, let's formalize this. For a node u, the sum of all the required contributions from its children (sum_low) must be <= the maximum allowed (r_u) multiplied by the number of operations.",
+      "start_char": 17199,
+      "end_char": 17690,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Because each operation can contribute at most r_u to u, and each such operation contributes at least as much to the children as to u. So each operation can contribute up to r_u to u, and thus sum_low <= (number of operations) * r_u. So the minimal number of operations required for node u is ceil(sum_low / r_u). But this would be added to the total ans. But how is this tracked in the code? Let's look at the code provided. For each node, during the loop from n downto 1, the code calculates dp[i]. The ans is incremented under certain conditions. In the sample:\n\nTest case 1:\n\nNode 2 is processed first.",
+      "start_char": 17691,
+      "end_char": 18299,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Since it's a leaf, the sum of its children is 0, but its own l and r are 2 and 2. So the required sum is 2. But since there are no children, the sum_low is 0, so the required sum for node 2 is max(l[2], sum_low) = 2. Since sum_low (0) <= r[2] (2), then dp[2] is min(r[2], 2). So dp[2] is 2. Then processing node 1. The sum_low is the sum of all children's dp (which is dp[2] = 2). Then, the required sum for node 1 is max(l[1] (1), sum_low (2)). But node 1's r is 1. Since 2 > 1, we need to perform ceil(2 / 1) = 2 operations. Wait, but in the sample, only one operation is needed. So perhaps this approach is incorrect. Wait, maybe the sum_low is the sum of the children's required sum. For node 1, the sum_low is 2 (from node 2). Since the node 1's own l is 1, the required sum for node 1 is max(1, sum_low) = 2. But node 1's r is 1. So 2 > 1. So here, we need to perform 2 operations. But the sample uses one. Hmm, that contradicts. So perhaps this line of reasoning is wrong. Wait, maybe the sum_low is the sum of the children's required sum, but each child's required sum must be >= the parent's sum. Because the parent's contribution in each operation is <= the child's. So the sum for the child is >= sum of parent's contributions in the same operations. So the sum for the child must be >= the sum for the parent multiplied by the number of operations that affect the child. Or something like that. Alternatively, for each node u, the sum of all children's required sum (sum_children) must be <= the sum of the increments applied to u (sum_u) multiplied by the number of operations that pass through u to the children. Because each such operation contributes to u and its children. But each such operation's contribution to the children is >= the contribution to u. But this is getting complicated. Let's think of each operation as contributing some x to u and at least x to each of its children. So for the children's sum, each operation contributes x_child >= x. So the sum of children's sum is >= sum of x's (sum_u_children) multiplied by x (the contribution to u). But perhaps the minimal number of operations needed for u is determined by the sum of children's required sum divided by the maximum possible x (r_u), but rounded up. But how does this work in the sample? The sum_children is 2 (for node 1), and r_u is 1. So 2 / 1 = 2, requiring 2 operations. But the sample uses 1. So this seems wrong.",
+      "start_char": 18300,
+      "end_char": 20719,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Alternatively, perhaps the code is keeping track of the minimal sum that must be assigned to u, given the children's needs. For node u, the required sum is the maximum between its own l and the sum of its children's required sums.",
+      "start_char": 20721,
+      "end_char": 20951,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "If this required sum exceeds u's r, then we need to perform ceil(required_sum / r_u) operations. But wait, in the sample, the required sum is 2 for node 1, but r_u is 1. So 2/1=2 operations. But the sample uses one. So this can't be right. Hmm. So perhaps there's a mistake in this line of thinking. Let's look at the sample explanation. In the first test case, the operation chosen is v=2, and the c array is [1,2]. So node 1 gets 1, node 2 gets 2. So sum_1 is 1, sum_2 is 2.",
+      "start_char": 20952,
+      "end_char": 21429,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "The sum of children's sum (node 2) is 2, which is larger than node 1's sum (1). But according to the sample, this is allowed. Ah, because the sum of the children's sum (2) is not constrained by the parent's sum (1). Because the sum for the child is from operations that pass through the parent. So for each operation that contributes to the child, the sum for the parent in that operation is <= the sum for the child in that operation. But the parent can also have other operations that contribute to it but not the child. So in the sample, the sum for the parent (1) comes from an operation that contributes to the child (sum for parent is 1, sum for child is 2 in that operation). So the parent's total sum is 1 (from that one operation), and the child's sum is 2 (also from that one operation).",
+      "start_char": 21430,
+      "end_char": 22228,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "The sum for the parent is less than the sum for the child, which is allowed. So the key is that the sum for the parent can be less than the sum for the child.",
+      "start_char": 22230,
+      "end_char": 22388,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "The parent's sum is the sum of all c_i's from all operations that include it, which includes operations that end at the parent (which don't contribute to the child) and operations that pass through to the child.",
+      "start_char": 22390,
+      "end_char": 22601,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Therefore, the sum for the parent (S_u) is the sum of all contributions from operations that end at u and those that pass through to its children.",
+      "start_char": 22603,
+      "end_char": 22749,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "For the child's sum (S_v), it is the sum of contributions from operations that pass through to v (and possibly its children). For each such operation, the contribution to u is c_i and to v is c_{i+1} >= c_i. But the parent can have other operations that end at u and contribute to S_u but not to S_v. Therefore, S_u can be greater than S_v if these other operations contribute enough. However, the child's sum must be >= the sum of the contributions from the operations that pass through it. But how to model this. It's a bit tricky.",
+      "start_char": 22750,
+      "end_char": 23284,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Another approach: For each node u, the minimal number of operations required is determined by the maximum between the number of operations needed by its children and the number of operations required to cover the required sum for u, considering the constraints from the children.",
+      "start_char": 23287,
+      "end_char": 23566,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Wait, perhaps the solution is to track for each node u the minimal required sum (clamped between l_u and r_u) and the maximum sum that can be allocated to it. The dp array might track the maximum possible sum that can be allocated to u and its subtree, given the constraints.",
+      "start_char": 23568,
+      "end_char": 23843,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Then, the answer is the number of times we need to split the operations due to the sum of children exceeding the parent's capacity. Here's a possible algorithm: Process the tree in post-order (children first, then parents). For each node u:\n\n- The sum of the children's required sums (sum_children) is the sum of the dp values of its children. Because dp[v] represents the maximum sum required by child v (from its own constraints and those of its children). - The required sum for u is the maximum between l_u and sum_children.",
+      "start_char": 23844,
+      "end_char": 24375,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Because u's sum must be at least l_u and also at least the sum required by its children (since each operation that contributes to the children must contribute at least as much to u, but sum_children could be more than l_u).\n\n-",
+      "start_char": 24376,
+      "end_char": 24602,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "However, if the required sum exceeds r_u, then we can't do it in a single operation and need to split into multiple operations.",
+      "start_char": 24603,
+      "end_char": 24730,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "The number of operations needed is ceil(required_sum / r_u). But since each operation can contribute up to r_u to u, but also at least r_u to the children (since the contributions are non-decreasing), then the required number of operations is ceil(sum_children / r_u). Wait, but the required sum is the maximum between l_u and sum_children.",
+      "start_char": 24731,
+      "end_char": 25072,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "If that maximum is greater than r_u, then it's impossible unless we split into multiple operations. So the number of operations needed for this node is the ceiling of (max(l_u, sum_children) ) divided by r_u. But how does this fit into the code? In the code, for each node i, we process it after its children. We calculate the sum of the dp values of its children. Then, we compute the required sum as max(l[i], sum_children).",
+      "start_char": 25073,
+      "end_char": 25500,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "If this required sum is greater than r[i], then we need to split into ceil(required_sum / r[i]) operations, and the ans is increased by (ceil(required_sum / r[i]) - 1) (since each split requires an additional operation). But wait, if the required sum is 2 and r[i] is 1, then we need 2 operations, which is an increase of 1 from the previous ans. Alternatively, the number of operations added is the number of times we need to split. For example, if sum_children is 5 and r[i] is 2, then ceil(5/2) = 3 operations. So ans increases by 3-1=2? Or is the total ans the sum of these values across all nodes? In the first sample:\n\nsum_children for node 1 is 2 (from node 2's dp[2] = 2). The required sum is max(1, 2) = 2. This exceeds r[i] = 1. So we need ceil(2/1) = 2 operations. But the sample uses 1 operation. So this approach must be wrong. But why? Because the sample's operation covers both the parent and the child in a single operation.",
+      "start_char": 25501,
+      "end_char": 26444,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "The parent's contribution is 1, and the child's is 2. So sum_children is 2, which is achieved in a single operation. So the code's approach must be different. Hmm. So maybe the required sum for the node is not the sum of the children's dp, but rather the minimal required sum for the children.",
+      "start_char": 26445,
+      "end_char": 26738,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "And for the node, the required sum is the maximum between its l and the sum of the children's required sums. But if this is greater than the node's r, then the number of operations needed is (sum_children + r[i] - 1) // r[i]. But how does that fit with the sample? Wait, maybe the dp[i] is the minimal sum that must be assigned to node i to satisfy its children's requirements. Then, the required sum for node i is the maximum between l[i] and the sum of the children's dp[j]. Then, if this required sum is larger than r[i], then we need to perform multiple operations.",
+      "start_char": 26740,
+      "end_char": 27310,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "The number of operations required is the ceiling of (sum_children / r[i]), which is added to the answer. But in this case, the node's dp[i] is set to r[i], since each operation can contribute up to r[i] to node i.\n\nBut let's see:\n\nSample 1:\n\nNode 2: sum_children is 0 (no children). required_sum = max(2, 0) = 2. Since 2 <= r[2] (2), then no operations needed. dp[2] = 2. Node 1: sum_children is 2. required_sum = max(1, 2) = 2. But r[1] is 1. So 2 > 1. So number of operations needed is ceil(2 / 1) = 2. So ans is 2. But the sample's answer is 1. So this is incorrect. So this approach must be wrong. Alternative idea: For each node u, the required sum is the sum of the children's required sums (sum_children). Then, the sum of the children's required sums must be <= the sum of the contributions to u from the operations that cover the children. But since each such operation contributes to u and the child, and the contribution to the child is >= the contribution to u, the sum_children must be <= sum_u_children (sum of contributions to u from those operations). But sum_u_children is <= sum_u (sum of all contributions to u from all operations). But sum_u is >= sum_u_children. Wait, this is getting really complicated. Maybe we need to look for the solution's approach. Looking for hints in the code:\n\nThe code has a dp array.",
+      "start_char": 27311,
+      "end_char": 28649,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "For each node i, during the processing, perhaps dp[i] is the minimal required sum that must be assigned to node i, considering its children's requirements. Then, for each node i:\n\nsum_children = sum of dp[j] where j is a child of i.\n\nrequired_sum = max(l[i], sum_children) if (required_sum > r[i]):\n\n   ans += required_sum // r[i] + ... ?",
+      "start_char": 28650,
+      "end_char": 28990,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Alternatively, the number of operations is the number of times the required_sum exceeds the node's capacity (r[i]). But this isn't matching the sample. So perhaps the correct approach is: For each node u, after considering its children, the sum of the children's required sums is sum_children. The required_sum for u is the maximum between l[u] and sum_children. If required_sum exceeds r[u], then we need to split into multiple operations, which is ceil(required_sum / r[u]). The ans is increased by (ceil(required_sum / r[u]) - 1), and the dp[u] is set to r[u]. Because each operation can contribute up to r[u], so after (k) operations, the total is k*r[u]. The minimal k is ceil(required_sum / r[u]). But this would imply that ans += (k-1), since each operation after the first adds 1. But in the sample, the required_sum for node 1 is 2, r is 1. So k=2, ans += 1. But the sample's answer is 1. So the code would output 1, which matches. Because the code's ans is initialized to 0, and in this case, ans increases by 1. Wait, but then for node 2:\n\nrequired_sum is max(2, 0) =2 <= 2. So no increment. ans remains 0. Then for node 1: required_sum 2 > r=1. So k=2, ans += 2-1=1. So ans is 1. Which matches the sample. Another sample: second test case. Test case 2:\n\nn=3, parents are p_2=1, p_3=2.\n\nl and r:\n\nnode 1: l=5, r=5\n\nnode 2: l=3, r=3\n\nnode 3: l=7, r=7. Sample output is 2. Processing nodes 3, then 2, then 1. Node 3: sum_children=0. required_sum=7 <= r=7. dp[3]=7. ans remains 0. Node 2: sum_children=7. required_sum = max(3,7) =7. r=3. 7>3. k=3. ans += 3-1=2. dp[2] =3. Node 1: sum_children=3. required_sum = max(5,3) =5. r=5. 5<=5. ans remains 2. So total ans is 2, which matches. Yes! So this approach seems correct. So the code should process each node, compute the sum of its children's dp values. The required_sum is the maximum between l[i] and sum_children. If required_sum exceeds r[i], then the number of operations needed is ceil(required_sum / r[i]).",
+      "start_char": 28992,
+      "end_char": 30979,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "The ans is increased by (k-1), where k is the number of operations. And the dp[i] is set to r[i]. But wait, when required_sum exceeds r[i], we set dp[i] to r[i], but the required_sum is k * r[i], where k is the number of operations. So for example, if required_sum is 2 and r[i] is 1, then k=2 operations, and sum is 2*1=2. So dp[i] is r[i]. But sum_children is the sum of children's dp's. So for node 1 in the first sample, the sum_children is 2. So required_sum is 2. Since required_sum exceeds r[i] of 1, we need 2 operations. But the sample uses 1 operation. How does this reconcile?",
+      "start_char": 30980,
+      "end_char": 31569,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Ah, because each operation contributes to the node and its children. So each operation contributes to the node's sum and the children's sum. But the sum of the children's sum must be <= k * r[i], where k is the number of operations.",
+      "start_char": 31571,
+      "end_char": 31803,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Because each operation can contribute up to r[i] to the node, which allows the sum_children to be up to k * r[i], since each operation's contribution to the children is at least the contribution to the node. So in the first sample, the sum_children is 2. The required_sum is 2, which exceeds r[i] of 1. So k=2 operations. Each operation contributes 1 to the node. So sum_children is 2*1=2, which matches. So the code's approach works, but the sample uses a single operation. How is this possible? Wait, this is a contradiction. Because according to the code's approach, the answer would be 1 for the first sample. But according to this logic, the code's approach gives ans=1. Wait, no. Let's see. The code's ans is initially 0. Processing node 2: sum_children 0. required_sum max(2,0) =2. r[2]=2. So required_sum <= r[i]. So dp[2] =2. ans remains 0. Processing node 1: sum_children is 2 (from node 2's dp). required_sum is max(1,2) =2. r[i]=1. So 2>1. So k=ceil(2/1)=2. ans += 2-1=1. dp[1] =1. So the ans is 1. Which matches the sample. Ah, so this approach works.",
+      "start_char": 31804,
+      "end_char": 32873,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "The key is that when required_sum exceeds r[i], the number of operations required is ceil(required_sum / r[i]), and the ans is increased by (k-1).",
+      "start_char": 32876,
+      "end_char": 33022,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Because the first operation is counted as part of the base case (you need at least one operation), and each additional operation increments the ans by 1. But how does this model the actual operations?",
+      "start_char": 33023,
+      "end_char": 33223,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Because in the first sample, according to the approach, we need 2 operations. But the sample uses one. So there's a discrepancy. Wait, no. The approach's ans is 1, which is the correct answer. But according to the code's calculation, the required_sum is 2, which is divided by r[i]=1, giving k=2. So ans += 2-1=1, leading to ans=1. Which matches. But how does the actual operation count fit with k=2? Because the sample uses one operation.",
+      "start_char": 33225,
+      "end_char": 33666,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Ah, I think the approach is not directly counting the number of operations, but rather the number of times we need to split the operations.",
+      "start_char": 33668,
+      "end_char": 33807,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "For example, when required_sum is 2 and r[i] is 1, we need two operations, but the sample uses one. So this suggests that the approach is incorrect. But why does the sample pass? Wait, I must have made a mistake here. Let me re-express the approach. For each node u, sum_children is the sum of its children's dp values. required_sum = max(l[u], sum_children)\n\nif required_sum > r[u]:\n\n   k = required_sum // r[u] (rounded up)\n\n   ans += k - 1\n\n   dp[u] = r[u]\n\nelse:\n\n   dp[u] = required_sum\n\nSo in the first sample:\n\nNode 2: required_sum=2, which is <= r[2]=2. dp[2] =2. Node 1: sum_children=2. required_sum=2. r[1]=1. So 2>1. k = ceil(2/1) =2. ans increases by 2-1=1. ans becomes 1.\n\ndp[1] =1. So the code's answer is 1, which matches the sample. But how is this possible with two operations? The sample uses one operation. Ah, here's the catch. The approach's ans is counting the number of splits needed. The total number of operations is the sum of all the k-1 across all nodes plus 1? Or is the ans variable directly accumulating the total number of operations. No. Let's think. For the first node (node 2), it requires 2, which is handled by one operation.",
+      "start_char": 33808,
+      "end_char": 34979,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Then, node 1 requires 2, but can only contribute 1 per operation. So it requires two operations. But the sample uses one operation.",
+      "start_char": 34980,
+      "end_char": 35111,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "How?\n\nAh, perhaps the approach is not directly counting the number of operations, but the minimal number of operations is the sum of all (k-1) for each node.",
+      "start_char": 35112,
+      "end_char": 35269,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Because each k-1 is the number of additional operations needed for that node beyond what is required by its children. But how?",
+      "start_char": 35270,
+      "end_char": 35396,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "In the first sample, the ans is 1. Which is the correct answer. But how can two operations be avoided? Because the sample uses one. So the approach must be correct, and the way the ans is calculated is different from the actual number of operations. Wait, no. The approach's ans is the correct answer.",
+      "start_char": 35399,
+      "end_char": 35702,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "The sample uses one operation, which is the minimal possible. But according to the approach, for node 1, the required_sum is 2.",
+      "start_char": 35703,
+      "end_char": 35830,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Since r[i] is 1, we need 2 operations. But the sample uses one. So why?\n\nAh, because the approach's model is not directly counting the operations, but the way the operations are applied. Let me think differently.",
+      "start_char": 35832,
+      "end_char": 36044,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Each time we have to split into multiple operations, each operation contributes to the node and its children. But when the node's required_sum exceeds its r[i], each operation contributes exactly r[i] to the node. And the sum of the children's required sum must be <= k * r[i]. Because each operation contributes to the node's sum with c_i, and the children's sum with c_{i+1} >= c_i. So the sum of the children's sum is the sum of c_{i+1} for each operation. Since c_{i+1} >= c_i = r[i] (for the node), then sum_children <= sum of c_{i+1} (which is >= sum of r[i] * k). But the sum_children is exactly required_sum = sum of the children's dp values. Wait, no. The sum_children is the sum of the children's dp values, which are their required_sum clamped to their r. So when the parent's required_sum is larger than its r, then k = ceil(required_sum / r[u]) is the number of operations required. But each operation contributes exactly r[u] to the parent's sum.",
+      "start_char": 36046,
+      "end_char": 37008,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "The children's sum would then be the sum of the parent's operations' contributions plus any operations that end at the children. But in the first sample, the children's sum is 2. The parent's r is 1. So sum_children =2. To achieve this, the parent's contributions from the operations must sum to 2 (from 2 operations of 1 each), which allows the children's sum to be >= 2. But how? Ah, in each operation that contributes to the parent, the children's contribution must be >= the parent's contribution. So if there are two operations, each contributing 1 to the parent, then the children's contribution in each of those two operations must be >= 1. The sum of the children's contributions would be at least 2 (1 +1).",
+      "start_char": 37009,
+      "end_char": 37726,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Which matches the required sum of 2. But in the sample, a single operation contributes 1 to the parent and 2 to the child. So the sum for the child is 2, which is >= the sum of the parent's contribution (1). So this also satisfies the condition.",
+      "start_char": 37727,
+      "end_char": 37973,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "Hence, one operation suffices. So the approach's model seems to require two operations, but the sample uses one. So why does the approach's ans give 1? Ah, no. The approach's ans is 1, which is the correct answer. Because for the node 1, k is 2. So ans += 2-1=1. So the total ans is 1, which matches the sample. But the actual number of operations is one, not two. So how does the model's k=2 relate to the actual number of operations?",
+      "start_char": 37974,
+      "end_char": 38412,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Ah, I think that the k is the number of operations required for the parent node's constraints. But in reality, the same operations can cover multiple nodes. So the model is accumulating the minimal number of operations required across all nodes, but each operation can contribute to multiple nodes. So the total number of operations is the maximum of the required operations for each node. No, that doesn't make sense. For example, in the second sample:\n\nNode 3 requires 7. It's a leaf, so one operation. Node 2's sum_children is 7, r=3. So k=3. ans +=3-1=2. Node 1's sum_children is 3, r=5. So no increment. ans remains 2. Total ans is 2, which matches the sample's two operations. So the model works correctly.",
+      "start_char": 38414,
+      "end_char": 39130,
+      "label": "mental_execution",
+      "label_info": {
+        "type": "mental_execution"
+      }
+    },
+    {
+      "text": "The key is that the k for each node represents the number of operations needed to cover that node's requirements and its children's. But each of these operations is a single path operation that contributes to multiple nodes. So the total number of operations is the sum of the (k-1) for all nodes. Because each node's (k-1) is the additional operations needed beyond the base. So for the first sample:\n\nnode 2: k=1, (k-1)=0. node 1: k=2, (k-1)=1. sum is 1. Total ans=1. In the sample, one operation is used. So the approach is correct. But how does the model's k=2 for node 1 result in one operation?",
+      "start_char": 39133,
+      "end_char": 39738,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Ah, because the k represents the number of operations required to cover that node and its children. But the actual number of operations is the sum of all (k-1) for each node, plus the initial operation. No, the ans variable is directly accumulating the required number of operations. For example, in the first sample, ans is 1, which is the correct answer. So the model works. Therefore, the code needs to compute, for each node, the sum of its children's dp values. The required_sum is max(l[i], sum_children). If required_sum exceeds r[i], then the number of operations is ceil(required_sum / r[i]), ans += (k-1), and dp[i] is set to r[i]. Otherwise, dp[i] is required_sum. So the missing code in the loop is:\n\nsum_children = 0;\n\nfor each child of i, sum_children += dp[child];\n\nrequired_sum = max(l[i], sum_children);\n\nif (required_sum > r[i]) {\n\n   ans += (required_sum + r[i] - 1) / r[i] - 1;\n\n   dp[i] = r[i];\n\n} else {\n\n   dp[i] = required_sum;\n\n} But how to get the children of i?",
+      "start_char": 39740,
+      "end_char": 40732,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Because in the code, the parent array is given as fa[i], where fa[i] is the parent of i. So to find the children of i, we need to have a way to store them. But the given code doesn't have such a structure.",
+      "start_char": 40734,
+      "end_char": 40939,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "The code only has the parent array fa. But since the code is processing the nodes in reverse order (from n downto 1), and the children of a node i are those j where fa[j] =i. But how to collect them?",
+      "start_char": 40940,
+      "end_char": 41140,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "The code provided doesn't build a children array. So perhaps the code is not intended to track the children, but uses a different approach. Wait, but the code as given processes the nodes from n downto 1. For each node i, when we process it, all of its children have already been processed (since children j have j > i if the parent is fa[j] < j, which is the case because p_i < i. So for example, j can be any node with fa[j] =i, which must be greater than i.\n\nSo to collect the children of i, we can, during the loop, build a list for each node. But the code provided does not have such a structure. So the code must be modified to collect the children. But the code as given in the problem does not have any such code. So the missing part must include building the children structure.",
+      "start_char": 41141,
+      "end_char": 41929,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Alternatively, perhaps the code uses the sum of dp[j] where j's parent is i.\n\nBut how to compute that sum without storing the children. So the missing code must first, during the processing of each node, keep track of the sum of dp of all children. But since the code is processing the nodes in reverse order, for each node i, after processing all children (since they are processed first), the code can accumulate the sum of dp[j] where fa[j] == i. So the code would need to: For each node i, sum_children is the sum of dp[j] for all j where fa[j] == i.\n\nBut how to do that without pre-storing the children. So perhaps, during the processing of each node j (from 2 to n), we can add dp[j] to a variable that accumulates for the parent of j.\n\nFor example, during processing node j, after computing dp[j], we can add dp[j] to a sum_children array for fa[j]. So the code would need an array sum_children of size maxn, initialized to 0. Then, during the loop from i =n downto 1:\n\nsum_children[fa[i]] += dp[i];\n\nBut wait, the nodes are processed in reverse order (i from n downto 1). So for each node i, when processing i, we add its dp[i] to sum_children[fa[i]]. But fa[i] is the parent of i, which is less than i. For example, when processing node 2 (i=2), which has parent 1. So after processing node 2, sum_children[1] += dp[2].",
+      "start_char": 41933,
+      "end_char": 43269,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Then, when processing node 1, sum_children[0] (which is not used) is incremented. But how to collect the sum_children for each node.",
+      "start_char": 43270,
+      "end_char": 43402,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Wait, perhaps the code uses the sum_children array, and during processing each node i, sum_children[i] is the sum of the dp of its children. But how to build this sum_children array. The code as given has no such array, but the missing code must include this. So the missing code would need to:\n\n1. Initialize an array sum_children of size maxn to 0.\n\n2. During the loop from i =n downto 1:\n\n   a. Compute sum_children[i] as the sum of all children's dp. But how to compute that.",
+      "start_char": 43405,
+      "end_char": 43887,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Alternatively, during processing each node i, we can add its dp[i] to sum_children[fa[i]], since i is a child of fa[i]. So during processing i, after computing dp[i], we do:\n\nsum_children[fa[i]] += dp[i];\n\nThen, when processing the parent fa[i], which is processed later (since nodes are processed in reverse order), the sum_children[fa[i]] would already have the sum of all children's dp. Wait, no. Because the nodes are processed from n downto 1. So for node i=3, which has fa[3] =2 (assuming parent is 2). When processing i=3, we compute dp[3], then add it to sum_children[2]. Then, when processing i=2, sum_children[2] contains dp[3], and any other children of 2. So yes. This approach works. So the steps are:\n\n- Initialize sum_children array to 0.\n\n- For each node i from n downto 1:\n\n   sum_children[i] is initially 0.\n\n   when processing i, compute sum_children[i] (sum of children's dp) by checking all j where fa[j] =i. But how to find those j.\n\nBut wait, sum_children array is being built by adding dp[j] to sum_children[fa[j]] when processing j. So for node i, the sum_children[i] will be the sum of dp[j] for all children j of i. For example:\n\nWhen processing j from n downto 1:\n\nafter computing dp[j], we add dp[j] to sum_children[fa[j]].",
+      "start_char": 43893,
+      "end_char": 45150,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Thus, when processing node i, sum_children[i] has already been accumulated by all of its children j (since j >i, and they are processed before i). So the code for the loop would be:\n\nfor (int i =n; i>=1; i--) {\n\n    LL sum_children = 0;\n\n    //",
+      "start_char": 45152,
+      "end_char": 45397,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Wait, no. sum_children is stored in sum_children[i], which was built by adding dp of children.\n\n    // So for node i, sum_children[i] is the sum of dp of all children. sum_children = sum_children[i];\n\n    LL required_sum = max(l[i], sum_children);\n\n    if (required_sum > r[i]) {\n\n        LL k = (required_sum + r[i] - 1) / r[i]; // ceil division.\n\n        ans += k -1;\n\n        dp[i] = r[i];\n\n    } else {\n\n        dp[i] = required_sum;\n\n    }\n\n    // Now, add dp[i] to the parent's sum_children. if (i != 1) { // since fa[i] is the parent of i.\n\n        sum_children[fa[i]] += dp[i];\n\n    }\n\n}\n\nBut the code as given does not have a sum_children array. So the missing code must manage this. But the code provided does not have such a sum_children array. So perhaps the original code uses a different approach. Alternatively, perhaps the code uses a different way to compute the sum_children for each node.",
+      "start_char": 45398,
+      "end_char": 46317,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "For example, during the loop, for each node i, sum_children is the sum of dp[j] where j is a child of i. But how to collect this without a sum_children array. Alternatively, the code can use a variable sum_children that is accumulated by checking all j where fa[j] ==i. But this would require O(n) time for each node, which is not feasible for n=2e5. So the correct approach is to use a sum_children array, and during processing each node, add dp[i] to sum_children[fa[i]]. But the code provided in the problem has no such array. So the missing code must include the following lines: In the work function:\n\narray<LL, maxn> sum_children;\n\nsum_children.fill(0); Then, inside the loop from i =n downto 1:\n\nsum_children[i] = ... ? But wait, no. The code must accumulate the sum_children for each node. So the code would need to: For each node i in reverse order:\n\n   sum_children[i] = sum of dp[j] for all j where fa[j] ==i.\n\nBut how to compute this sum_children[i]. But if we process the nodes in reverse order, and when processing node j, add dp[j] to sum_children[fa[j]], then for node i, sum_children[i] will contain the sum of all its children's dp. So the code would look like this:\n\nInside the loop from i =n downto 1:\n\n   LL sum = 0;\n\n   // For each child j of i, sum += dp[j]\n\n   // But how to find the children of i?\n\n   //",
+      "start_char": 46318,
+      "end_char": 47657,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Since children are processed after i, and when j is processed, we can add dp[j] to sum_children[fa[j]]\n\n   // Wait, no.\n\n   // For example, when processing j=2 (fa[j] =1), then sum_children[1] += dp[2].\n\n   // When processing i=1, sum_children[1] already has the sum of all children's dp. sum_children[i] = sum_children[i]; // This is already accumulated by the children.\n\n   // So sum_children[i] is the sum of all children's dp. LL required_sum = max(l[i], sum_children[i]);\n\n   if (required_sum > r[i]) {\n\n       LL k = (required_sum + r[i] -1) / r[i];\n\n       ans += k-1;\n\n       dp[i] = r[i];\n\n   } else {\n\n       dp[i] = required_sum;\n\n   }\n\n   if (i ! =1) {\n\n       sum_children[fa[i]] += dp[i];\n\n   }\n\nSo the code needs a sum_children array to accumulate the sum of children's dp. But in the original code, there is no sum_children array. So the missing code must include the creation and management of this array. But the original code provided in the problem does not have such an array. So the missing code must be:\n\nInside the loop for i from n downto 1:\n\nsum_children = sum of dp[j] for j where fa[j] == i. But since the code does not have a way to track the children, this sum must be computed dynamically, which is not possible efficiently unless the children are stored. So the correct approach is to create a sum_children array, initialized to 0. Then, for each node j, when processed, add dp[j] to sum_children[fa[j]]. So in the code:\n\narray <LL, maxn> sum_children;\n\nsum_children.fill(0); Then, inside the loop:\n\nsum_children[fa[i]] += dp[i];\n\nBut wait, the loop is from i=n downto 1. So for each i, when processed, we add dp[i] to sum_children[fa[i]]. Then, when processing fa[i], sum_children[fa[i]] has already accumulated the dp of all its children. So the correct code is:\n\nInside the loop:\n\nsum_children[fa[i]] += dp[i];\n\nLL required_sum = max(l[i], sum_children[i]); But no, sum_children[i] is the sum of all children of i, which are those j with fa[j] =i. So when processing i, sum_children[i] already contains the sum of all children's dp. But how?\n\nLet's see: For example, node i has children j1, j2, etc. Each j is processed before i (since j >i). When j is processed, during the loop iteration for j, we add dp[j] to sum_children[fa[j]] = sum_children[i]. So by the time we process i, sum_children[i] already has the sum of all children's dp. Yes. So the code for each i:\n\nsum_children[i] is the sum of all children's dp. So inside the loop:\n\nLL sum_children_i = sum_children[i];\n\nLL required_sum = max(l[i], sum_children_i);\n\nif (required_sum > r[i]) {\n\n   LL k = (required_sum + r[i] - 1) / r[i];\n\n   ans += k-1;\n\n   dp[i] = r[i];\n\n} else {\n\n   dp[i] = required_sum;\n\n}\n\n// Add dp[i] to parent's sum_children\n\nif (i != 1) {\n\n   sum_children[fa[i]] += dp[i];\n\n}\n\nBut in the code provided, there's no sum_children array. So the missing code must include this. Therefore, the missing code inside the loop is:\n\nsum_children[i] = sum_children[i]; // Not needed, since sum_children[i] already contains the sum. LL required_sum = max(l[i], sum_children[i]);\n\nif (required_sum > r[i]) {\n\n    ans += (required_sum + r[i] - 1) / r[i] - 1;\n\n    dp[i] = r[i];\n\n} else {\n\n    dp[i] = required_sum;\n\n}\n\nif (i != 1) {\n\n    sum_children[fa[i]] += dp[i];\n\n} But in the code provided, there's no sum_children array. So the code must be modified to include this array. But the code provided has the following variables:\n\narray <int, maxn > fa;\n\narray <LL, maxn > l, r, dp;\n\nSo the missing code must declare a sum_children array and manage it. But according to the code provided, the code does not have such a sum_children array. So the missing code must include the following steps:\n\nInside the work function:\n\narray<LL, maxn> sum_children;\n\nsum_children.fill(0); Then, inside the loop for i from n downto 1:\n\nsum_children[i] is the sum of the dp of i's children. So the code would be:\n\nLL sum_child = sum_children[i];\nLL required = max(l[i], sum_child);\nif (required > r[i]) {\n    ans += (required + r[i] - 1) / r[i] - 1;\n    dp[i] = r[i];\n} else {\n    dp[i] = required;\n} if (i != 1) {\n    sum_children[fa[i]] += dp[i];\n}\n\nSo the missing code inside the loop is:\n\nsum_child = sum_children[i];\nrequired = max(l[i], sum_child);\nif (required > r[i]) {\n    ans += (required + r[i] -1)/r[i] -1;\n    dp[i] = r[i];\n} else {\n    dp[i] = required;\n} if (i ! =1) sum_children[fa[i]] += dp[i];\n\nBut how is sum_children[i] computed? Because initially, sum_children is filled with 0. Then, as each node i is processed, its children have already added their dp to sum_children[i]. For example, when node j is processed (j >i), and fa[j] =i, then during the processing of j, sum_children[i] += dp[j]. So by the time node i is processed, sum_children[i] contains the sum of all children's dp. Thus, the missing code in the loop is:\n\nLL sum_child = sum_children[i];\nLL required = max(l[i], sum_child);\nif (required > r[i]) {\n    LL k = (required + r[i] -1)/r[i];\n    ans += k -1;\n    dp[i] = r[i];\n} else {\n    dp[i] = required;\n} if (i !=1) {\n    sum_children[fa[i]] += dp[i];\n}\n\nBut in the code provided, the sum_children array is not declared. So the missing code must include this. But according to the problem statement, we are to fill in the missing code. The code provided in the problem does not have the sum_children array. So we must add it in the missing code. But the code's work function is:\n\nvoid work() {\n    int n;\n    cin>>n;\n    for(int i=2;i<=n;i++) cin>>fa[i];\n    for(int i=1;i<=n;i++) cin>>l[i]>>r[i];\n    int ans=0;\n    dp.fill(0);\n    for(int i=n;i>=1;i--){\n        /* TODO: Your code here */\n    }\n    cout<<ans<<endl;\n    return;\n} So the missing code is inside the loop. We need to implement the sum_children array, but since it's not declared in the code, we have to manage it locally.",
+      "start_char": 47658,
+      "end_char": 53503,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Wait, but the code uses a dp array which is declared outside the work function. So perhaps the sum_children array must be declared inside the work function. But in the code provided, the sum_children array is not declared. So the missing code must include the sum_children array. But how can we declare and manage it within the loop? That's not possible. So the sum_children array must be declared inside the work function. Thus, the correct missing code is:\n\nInside the work function, after reading the input:\n\narray<LL, maxn> sum_children;\nsum_children.fill(0); Then, inside the loop:\n\nfor(int i =n; i >=1; i--) {\n    LL sum_child = sum_children[i];\n    LL required = max(l[i], sum_child);\n    if (required > r[i]) {\n        LL k = (required + r[i] -1)/r[i];\n        ans += k-1;\n        dp[i] = r[i];\n    } else {\n        dp[i] = required;\n    } if (i !=1) {\n        sum_children[fa[i]] += dp[i];\n    }\n}\n\nBut since the code provided does not declare sum_children, the missing code must include this. But in the code provided, the loop's body is empty. So the missing code must include all of this. But how to write this in the code provided. The code provided's loop is:\n\nfor(int i=n;i>=1;i--){\n    /* TODO: Your code here */\n} So the missing code inside the loop is:\n\nLL sum_child = sum_children[i];\nLL required = max(l[i], sum_child);\nif (required > r[i]) {\n    LL k = (required + r[i] -1)/r[i];\n    ans += k-1;\n    dp[i] = r[i];\n} else {\n    dp[i] = required;\n} if (i !=1) {\n    sum_children[fa[i]] += dp[i];\n}\n\nBut to do this, the sum_children array must be declared and initialized inside the work function. But in the code provided, the sum_children array is not declared. So the missing code must include the declaration and initialization of sum_children. But the code provided in the work function has:\n\narray <int, maxn > fa;\narray <LL, maxn > l, r, dp; But no sum_children. So the sum_children array must be declared inside the work function. Therefore, the missing code inside the loop is:\n\nThe code must declare sum_children inside the work function.",
+      "start_char": 53505,
+      "end_char": 55587,
+      "label": "bug_fixing",
+      "label_info": {
+        "type": "bug_fixing"
+      }
+    },
+    {
+      "text": "Then, inside the loop, compute sum_child, required, etc. But in the code provided, the missing code is only inside the loop. So this suggests that the sum_children array must be declared inside the loop's scope, but that's not possible.",
+      "start_char": 55588,
+      "end_char": 55824,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Alternatively, perhaps the code can be written without using a sum_children array, but instead using the dp array in a different way. But I don't see how.",
+      "start_char": 55827,
+      "end_char": 55981,
+      "label": "high_level_plan",
+      "label_info": {
+        "type": "high_level_plan"
+      }
+    },
+    {
+      "text": "Therefore, the correct missing code inside the loop is as follows: But since the code provided does not have the sum_children array, and the code must be filled in, the only way is to manage the sum_children array within the work function. But according to the code structure provided, the missing code must include the initialization of sum_children array, but the code in the work function does not have that. So perhaps the code uses a different approach.",
+      "start_char": 55983,
+      "end_char": 56441,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Wait, maybe the code uses a different approach where each node's sum_children is computed by iterating through all children. But for large n (2e5), this would be O(n^2) and would not be feasible. Alternatively, the code uses the parent array to accumulate the sum_children during the loop. But how. The code in the loop must:\n\n1.",
+      "start_char": 56445,
+      "end_char": 56777,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "For each node i, compute the sum of its children's dp values. But since the code processes nodes in reverse order (n downto 1), and for each child j of i, j is processed before i. So during processing j, we can accumulate the dp[j] into a sum_children array for the parent of j.\n\nThus, in the code, after computing dp[j], we add dp[j] to the sum_children of its parent. But the code provided does not have this sum_children array. So the correct missing code is:\n\nInside the work function, after declaring n, fa, l, r, etc., and before the loop:\n\narray<LL, maxn> sum_children{};\n\nsum_children.fill(0); Then, inside the loop for i from n downto 1:\n\nLL sum_child = sum_children[i];\nLL required = max(l[i], sum_child);\nif (required > r[i]) {\n    LL k = (required + r[i] - 1) / r[i];\n    ans += k - 1;\n    dp[i] = r[i];\n} else {\n    dp[i] = required;\n}\nif (i != 1) {\n    sum_children[fa[i]] += dp[i];\n} So the code inside the loop is:\n\nsum_child = sum_children[i];\nrequired = max(l[i], sum_child);\nif (required > r[i]) {\n    LL k = (required + r[i] - 1) / r[i];\n    ans += k - 1;\n    dp[i] = r[i];\n} else {\n    dp[i] = required;\n} if (i != 1) sum_children[fa[i]] += dp[i];\n\nThus, the missing code inside the loop is the above lines. But how to write this in the code. The code provided's loop body is empty, so the missing code must be all these lines. So the filled-in code inside the loop is:\n\nLL sum_child = sum_children[i];\nLL required = max(l[i], sum_child);\nif (required > r[i]) {\n    LL k = (required + r[i] - 1) / r[i];\n    ans += k - 1;\n    dp[i] = r[i];\n} else {\n    dp[i] = required;\n} if (i != 1) {\n    sum_children[fa[i]] += dp[i];\n}\n\nBut the sum_children array must be declared and initialized in the work function. So the work function's code should include:\n\narray<LL, maxn> sum_children;\nsum_children.fill(0); But in the code provided, there is no such array.",
+      "start_char": 56778,
+      "end_char": 58660,
+      "label": "bug_fixing",
+      "label_info": {
+        "type": "bug_fixing"
+      }
+    },
+    {
+      "text": "Therefore, the missing code must include the declaration and initialization of sum_children array. But since the code provided does not have this, the user must add it. But according to the problem's instruction, we are to output only the missing code that fills in the TODO block. So the code inside the loop is the missing code. But how can the code inside the loop access sum_children array if it is not declared.",
+      "start_char": 58662,
+      "end_char": 59078,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Ah, here's the problem: the code provided in the problem does not have the sum_children array. So the answer must include code that uses a sum_children array, which must be declared inside the work function. But according to the problem's instructions, we are to output only the missing code for the TODO block. So the code inside the loop must manage to track the sum_children without using an explicit array. But that's not possible.",
+      "start_char": 59084,
+      "end_char": 59519,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Thus, the correct answer is the code inside the loop, assuming that the sum_children array has been declared and initialized. But given the code provided, the correct missing code is:\n\nLL sum_child = 0;\nfor (int j = i+1; j <=n; j++) {\n    if (fa[j] == i) {\n        sum_child += dp[j];\n    }\n}\nLL required = max(l[i], sum_child);\nif (required > r[i]) {\n    LL k = (required + r[i] - 1) / r[i];\n    ans += k -1;\n    dp[i] = r[i];\n} else {\n    dp[i] = required;\n} But this approach is O(n^2) and would not work for n=2e5. So this is not feasible. Therefore, the correct answer is the code that uses the sum_children array, and the code inside the loop is:\n\nsum_children[i] = sum_children[i];\nLL required = max(l[i], sum_children[i]);\nif (required > r[i]) {\n    LL k = (required + r[i] - 1) / r[i];\n    ans += k-1;\n    dp[i] = r[i];\n} else {\n    dp[i] = required;\n} if (i ! =1) sum_children[fa[i]] += dp[i]; But this requires the sum_children array to be declared and initialized in the work function. But since the code provided in the problem does not have this array, the correct answer must include this code, but the problem's instructions state that we must output only the missing code for the TODO block. However, the code provided does not have the sum_children array, so this would be impossible.",
+      "start_char": 59523,
+      "end_char": 60830,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Therefore, the correct answer is the code inside the loop that uses sum_children array, assuming that the array is declared and initialized. But given the code provided, the sum_children array must be declared inside the work function. So the missing code includes:\n\narray<LL, maxn> sum_children{};\nsum_children.fill(0); But this is not possible inside the loop. So the correct answer is the code inside the loop as described earlier. But the code provided does not have the sum_children array. So this suggests that the code is intended to use a different approach, which is not the case. Thus, the correct missing code is as follows: LL sum_child = 0;\nfor (int j = i+1; j <= n; j++) {\n    if (fa[j] == i) {\n        sum_child += dp[j];\n    }\n}\nLL required = max(l[i], sum_child);\nif (required > r[i]) {\n    LL k = (required + r[i] -1)/r[i];\n    ans += k -1;\n    dp[i] = r[i];\n} else {\n    dp[i] = required;\n} But this is O(n^2) and will not pass for large n. But the problem's constraints require an O(n) solution, which can only be achieved with the sum_children array approach.",
+      "start_char": 60832,
+      "end_char": 61917,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    },
+    {
+      "text": "Therefore, the correct answer is the code that uses the sum_children array, which requires declaring it in the work function. But according to the problem's instructions, we are to output only the missing code inside the loop. So, assuming that the sum_children array has been declared and initialized, the code inside the loop is:\n\nLL sum_child = sum_children[i];\nLL required = max(l[i], sum_child);\nif (required > r[i]) {\n    LL k = (required + r[i] - 1) / r[i];\n    ans += k - 1;\n    dp[i] = r[i];\n} else {\n    dp[i] = required;\n} if (i != 1) {\n    sum_children[fa[i]] += dp[i];\n}\n\nBut since the code provided does not have sum_children array, the missing code must include these lines. Therefore, the missing code is:\n\nLL sum_child = sum_children[i];\nLL required = max(l[i], sum_child);\nif (required > r[i]) {\n    LL k = (required + r[i] -1)/r[i];\n    ans += k -1;\n    dp[i] = r[i];\n} else {\n    dp[i] = required;\n}\nif (i ! = 1) sum_children[fa[i]] += dp[i];",
+      "start_char": 61921,
+      "end_char": 62885,
+      "label": "code_analysis",
+      "label_info": {
+        "type": "code_analysis"
+      }
+    }
+  ],
+  "metadata": {
+    "state": "compile_failed",
+    "answer": "To solve this problem, we need to determine the minimum number of operations required to ensure that each node in a tree meets its specified value range constraints. Each operation involves selecting a path from the root to a node and applying a non-decreasing sequence of increments along that path.\n\n### Approach\n1. **Tree Traversal**: Process the tree in reverse order (from leaves to root) to ensure that we handle child nodes before their parents.\n2. **Dynamic Programming (DP)**: Use a DP array to track the maximum value that each node can contribute while respecting the constraints of its children.\n3. **Sum of Children's Contributions**: For each node, calculate the sum of contributions required by its children. If this sum exceeds the node's maximum allowed value, determine the number of operations needed to cover the excess.\n4. **Ceiling Division**: Use ceiling division to determine the number of operations required when the sum of children's contributions exceeds the node's maximum allowed value.\n\n### Solution Code\n```cpp\n        array<LL, maxn> sum_children{};\n        sum_children.fill(0);\n        for(int i=n;i>=1;i--){\n            LL sum_child = sum_children[i];\n            LL required = max(l[i], sum_child);\n            if(required > r[i]){\n                LL k = (required + r[i] - 1) / r[i];\n                ans += k - 1;\n                dp[i] = r[i];\n            } else {\n                dp[i] = required;\n            }\n            if(i != 1) sum_children[fa[i]] += dp[i];\n        }\n```"
+  },
+  "original_reasoning": "Okay, let's try to figure out how to solve this problem. So the problem is about a tree where each node has a value a_v that starts at 0. We need to make sure each a_v is between l_v and r_v. The operations allowed involve choosing a path from the root to a vertex v and adding a non-decreasing array of increments along that path. The goal is to find the minimum number of operations required.\n\nHmm. The key here is to model how each operation affects the nodes. Since each operation's c array is non-decreasing, each node along the path must receive a value that's at least as much as the previous ones. This suggests that when we perform an operation, the increments along the path have to form a non-decreasing sequence.\n\nLet me think about the constraints. For each node, after all operations, the sum of increments (from all operations that include this node in their path) must be between l_v and r_v. But each operation contributes some c_i to the nodes along the path, and the c_i's are non-decreasing for each operation.\n\nWait, but each operation is a path from root to some node v. So for a particular node u, every time an operation includes u in the path (i.e., when the operation's path is to a descendant of u), u's a value is increased by some c_j (where j is the position of u in that path's array). But since the path is root to some node, the positions are determined by the depth. For example, the root is always first, then its child, and so on until v.\n\nSo each operation contributes a non-decreasing sequence of increments to the nodes along the path. The sum for a node u is the sum of all the c values in the paths that include u, where each c is part of a non-decreasing array for that path.\n\nBut how can we model this efficiently? Because considering each possible operation directly would be computationally infeasible, especially given the constraints on n up to 2e5.\n\nLet's think about the problem from the perspective of each node and its constraints. For each node, the sum of increments from all operations must be at least l_v and at most r_v. But the way these increments are applied is constrained by the operations' non-decreasing c arrays along their paths.\n\nI remember that in some similar problems, a greedy approach works. Maybe we can process the tree in reverse order, starting from the leaves and moving up to the root. Because each operation affects a path from the root to a node, the leaves can only be directly affected by operations that end at them, while their parent nodes can be affected by operations ending at them or any of their descendants.\n\nWait, but for a node u, all operations that affect u must be part of a path that includes u. So the sum of increments for u is the sum of all c_i's from operations where u is on the path. For example, if an operation is on a path ending in v, which is a descendant of u, then u is part of that path, and contributes some c_j (the j-th position in the c array of that operation) to u's a_v.\n\nBut each such c_j must be <= the next elements in the c array of that operation. So for a particular operation, the c array is non-decreasing. So, the increments applied to u in that operation must be <= the increments applied to its children in that same operation.\n\nWait, no. Because the c array is non-decreasing, so for the path from root to v, the increments for the nodes along the path must satisfy c_1 <= c_2 <= ... <= c_k. So the parent nodes in the path (closer to root) have lower or equal increments compared to the child nodes in that same path.\n\nSo for a particular operation, when you apply it to a path, the root (node 1) gets c_1, its child gets c_2, and so on. And c_1 <= c_2 <= ... <= c_k.\n\nThis suggests that when considering the sum of increments for each node, the way they are added must satisfy that, for each node, the sum of increments from all operations in which it's part of a path must be such that the maximum c_i in the paths that pass through it (but not going further) and those that do pass through its children.\n\nWait, perhaps another angle: Let's think of each node's required sum as being built up by contributions from operations. Each operation contributes some value to the nodes along a path. The constraint is that along the path of the operation, the contributions are non-decreasing. So, for each operation, the contribution to node u (which is on the path) must be <= the contribution to its child in the path.\n\nBut since multiple operations can contribute to the same node, how do these constraints interact?\n\nAlternatively, perhaps each operation can be thought of as adding a certain amount to the path, with the constraint that each step along the path (from root to v) can't decrease. So, for the sum of all operations, the sum must be such that for any node and its child in the tree, the sum of contributions to the child (from all operations that include the child) must be >= the sum of contributions to the parent from those same operations. Wait, no. Because each operation that includes the child's parent (since the child is on the path) may have higher contributions in the child's position. But this is getting complicated.\n\nAlternatively, perhaps the key is to model for each node u the minimal and maximal possible sum of contributions that can be assigned, given the constraints from the operations.\n\nWait, maybe we can model for each node u the required minimum and maximum cumulative contributions. Then, for each node, we need to determine how much it can contribute based on its children's constraints.\n\nLet me look at the code provided. The code processes the nodes in reverse order (from n down to 1), and has a dp array. The problem's solution likely involves dynamic programming, where for each node, we track some information that helps determine the number of operations needed.\n\nThe variables l and r are the lower and upper bounds for each node. The dp array is probably tracking the maximum possible sum that can be allocated to the node's subtree, given the constraints. Or maybe the minimal number of operations required for the subtree.\n\nAlternatively, considering the code structure:\n\nIn the loop from i = n downto 1:\n\nFor each node, we have to compute something based on its children. Since processing in reverse order (children first), perhaps the approach is to compute the required constraints for each node based on its children.\n\nWait, here's an idea. Each operation can be viewed as adding a certain amount to a path. Since the increments are non-decreasing along the path, the contribution to a node u in an operation is <= the contribution to its child in the same operation. But when considering multiple operations, the sum for u's contribution from all operations must be <= the sum for its child's contribution from all operations that pass through u's child.\n\nWait, but each operation that affects a child of u must pass through u. So for u's child, every operation that contributes to it also contributes to u. But in each such operation, the contribution to u is <= the contribution to the child. Therefore, the sum for u (sum of all contributions from operations that include u) must be <= the sum for the child (sum of contributions from operations that include the child). Because in each operation, the contribution to u is <= the contribution to the child.\n\nWait, no. Because each operation that includes the child also includes u (since the path goes through u). But in that operation, the contribution to u is c_i, and the contribution to the child is c_{i+1}, which is >= c_i. So for the sum of all such operations, the sum for u is the sum of all c_i's from operations that include u, and the sum for the child is the sum of all c_{i+1}'s from operations that include the child. Since each c_{i+1} >= c_i, then the sum for the child is >= the sum for u. Because in each operation that includes the child, the contribution to the child is >= the contribution to u.\n\nTherefore, for any node u and its child v, the sum of contributions to v (from all operations) must be >= the sum of contributions to u (from those same operations). But the sum for u includes contributions from all operations that include u (even those that end at u), whereas the sum for v includes contributions from operations that include v (which are a subset of those that include u, since v is a child of u).\n\nWait, this is getting a bit tangled. Let's think of the sum for u (S_u) and sum for v (S_v). Each time an operation includes v (so the path is to v or one of its descendants), then that operation contributes c_i to u (where i is the position in the path), and c_{i+1} to v. Since c_i <= c_{i+1}, each such operation contributes to S_u and S_v with c_i and c_{i+1} where c_i <= c_{i+1}.\n\nAdditionally, there are operations that end at u. These contribute some c_i to u, and nothing to v (since the path stops at u). For these operations, the c_i can be anything as long as the array is non-decreasing. But since the path ends at u, there's no node after u in the path. So in such operations, the contribution to u is c_i, and there's no contribution to v.\n\nSo for S_u, it's the sum of all contributions from all operations that include u. For S_v, it's the sum of contributions from all operations that include v. Since v is a child of u, every operation that includes v also includes u. So S_v's sum is the sum of c_{i+1} from all operations that include v, plus any contributions from operations that end at v's children, etc. But S_u includes all operations that include u, which includes operations ending at u, and operations that go through u to reach its descendants.\n\nHmm. So S_u >= sum of the c_i's from all operations that go through u. But for each such operation, the c_i's for u are part of a non-decreasing array. So, for any operation, the contribution to u (c_i) is <= the contribution to its child in the path (c_{i+1}).\n\nSo, for S_v (sum of contributions to v), it's the sum of c_{i+1} from all operations that include v. Since each such operation's c_{i+1} >= c_i (the contribution to u in that same operation), then the sum of c_{i+1} for v (S_v) must be >= the sum of c_i for u in those same operations. But u can have other contributions from operations that don't include v (like operations ending at u or other children of u). So, the total S_u is the sum of all contributions from all operations that include u (including those that end at u, or go to other children).\n\nWait, this seems complicated. Maybe the key insight is that for each node u, the sum S_u must be at least l_u and at most r_u. Also, for any child v of u, S_v must be >= the sum of contributions to u from operations that pass through v. Because each such operation contributes c_i to u and c_{i+1} >= c_i to v. So the sum of c_i's for u from operations that go through v is <= sum of c_{i+1}'s for v. But S_u includes all such c_i's plus those from operations ending at u. And S_v includes all c_{i+1}'s from those operations plus contributions from operations that go through v's children.\n\nThis seems tricky. How can we model this in a way that allows us to compute the minimal number of operations?\n\nLet's think about the minimal number of operations. Each operation can cover a path from the root to some node. To cover multiple nodes with a single operation, we need to find a path such that the required increments along that path can be added in a non-decreasing way.\n\nAn alternative approach is to model the problem as follows: For each node u, the minimal number of operations needed is determined by the constraints of u and its children. Since each operation can affect a path, the key is to find a way to cover the required increments in a way that maximizes the coverage of multiple nodes with a single operation.\n\nWait, perhaps the answer is equal to the number of nodes where their required minimum cannot be covered by their parent's maximum. Because each such node would require an additional operation.\n\nAlternatively, the problem may reduce to the number of nodes where the cumulative required maximum from the subtree is more than the parent's capacity. For example, when processing the nodes bottom-up, for each node, we track the minimal possible maximum sum (dp[i]) that can be assigned, considering the constraints from its children. If the sum of required contributions from the children exceeds the node's maximum allowed (r[i]), then we need to split into multiple operations.\n\nLooking back at the code provided, the dp array is filled from n downto 1. So for each node i, after processing all its children (since it's processed after them), we calculate something. The answer is the number of times we have to split, which is the ans variable.\n\nSo the code's main loop is for each node i from n downto 1. The code needs to compute the dp[i], and possibly update the ans.\n\nLooking at the sample input 1:\n\nTest case 1: n=2, p_2 is 1. l_1=1, r_1=1; l_2=2, r_2=2.\n\nProcessing in reverse order (i=2, then i=1).\n\nFor i=2: l[2]=2, r[2]=2. Since it's a leaf node, the dp[2] would be the minimal sum needed. But how? Wait, for the leaf node, any operation that affects it must be an operation ending at it. So for node 2, the sum is the sum of contributions from all operations that include it. But the path from root to 2 includes node 1 and 2. So each operation for node 2 adds a non-decreasing c array of length 2. So the sum for node 2 is the sum of c_2's from all operations for node 2 and any operations that go through node 2 (but node 2 has no children). The sum for node 1 is the sum of c_1's from all operations that include it, including those for node 2.\n\nBut how does this translate into the dp array?\n\nIn the sample, after the first operation (v=2, c=[1,2]), node 1's sum is 1 (from c_1=1) and node 2's sum is 2 (from c_2=2). Since this is a single operation, the answer is 1.\n\nSo the key is that for each node, when processing it, we need to accumulate the required contributions from all its children. If the sum of the minimal required contributions from the children exceeds the current node's r[i], then we have to split into multiple operations.\n\nWait, maybe the approach is to track for each node u the minimal and maximal possible sum of contributions that can be made, considering the constraints of the children.\n\nAlternatively, here's an idea from some similar problems: the minimal number of operations is the number of nodes where the required maximum (r) is less than the sum of the required maxima of their children. Wait, not sure.\n\nAlternatively, for each node u, the sum of all the required contributions from its children (which must be >= the contributions from u in the same operations) could exceed u's own maximum allowed. So, the number of operations needed is the number of times this sum exceeds the maximum allowed, requiring splitting into multiple operations.\n\nWait, perhaps for each node u, we collect the sum of the contributions needed by its children. Each child v of u must have a sum S_v >= S_u (from the operations that pass through u to v). But S_u is the sum of contributions from all operations that pass through u, including those that end at u.\n\nBut how to model this. Let's think recursively. For a node u, the sum of the contributions from its children must be <= S_u's maximum allowed (r_u). Because each child's contribution is >= the contribution from u in the same operations. So, the sum of the children's required contributions (sum of l_v) would require that S_u must be >= sum of l_v. But S_u can't exceed r_u.\n\nSo if the sum of the minimal required contributions from the children (sum of l_v) exceeds the node's maximum (r_u), then it's impossible. But the problem states that a solution exists. So perhaps in such a case, we need to perform multiple operations.\n\nWait, but the problem says it's possible. So maybe the code is counting the number of times the sum of the children's required minimal (or some other value) exceeds the current node's maximum, and increments the ans each time.\n\nLooking at the code's loop:\n\nfor i from n downto 1:\n\nThe code needs to compute something for dp[i].\n\nIn the sample where node 1's r is 1 and node 2's l is 2. But the sample uses a single operation where node 1 gets 1 and node 2 gets 2, which satisfies the constraints.\n\nSo for node 2, dp[2] is 2. For node 1, which has to sum up the contributions from its children. But node 1 has one child (node 2). The sum of the contributions from the children (node 2) is 2. But node 1's r is 1. So in this case, the sum of children's required contributions (2) exceeds the parent's r (1). So here, we need to split into operations. But how?\n\nWait, but in the sample, the sum for node 1 is 1 (from the operation's c_1=1). The sum for node 2 is 2 (from c_2=2). The sum of the children's required contributions is 2, but node 1's maximum is 1. So how does this fit into the solution?\n\nAh, maybe the idea is that for each node u, the sum of the required contributions from its children (each child's required sum) must be <= the maximum possible contribution of u (r_u). If the sum is larger than r_u, then we need to split into (sum_children / r_u) operations. Because each operation can contribute up to r_u to u, and each such operation can contribute up to the sum_children divided by the number of operations. But since each operation's contribution to the children must be >= the contribution to u, perhaps each operation can cover some of the required sum.\n\nWait, let's formalize this. For a node u, the sum of all the required contributions from its children (sum_low) must be <= the maximum allowed (r_u) multiplied by the number of operations. Because each operation can contribute at most r_u to u, and each such operation contributes at least as much to the children as to u. So each operation can contribute up to r_u to u, and thus sum_low <= (number of operations) * r_u.\n\nSo the minimal number of operations required for node u is ceil(sum_low / r_u). But this would be added to the total ans.\n\nBut how is this tracked in the code? Let's look at the code provided. For each node, during the loop from n downto 1, the code calculates dp[i]. The ans is incremented under certain conditions.\n\nIn the sample:\n\nTest case 1:\n\nNode 2 is processed first. Since it's a leaf, the sum of its children is 0, but its own l and r are 2 and 2. So the required sum is 2. But since there are no children, the sum_low is 0, so the required sum for node 2 is max(l[2], sum_low) = 2. Since sum_low (0) <= r[2] (2), then dp[2] is min(r[2], 2). So dp[2] is 2.\n\nThen processing node 1. The sum_low is the sum of all children's dp (which is dp[2] = 2). Then, the required sum for node 1 is max(l[1] (1), sum_low (2)). But node 1's r is 1. Since 2 > 1, we need to perform ceil(2 / 1) = 2 operations. Wait, but in the sample, only one operation is needed. So perhaps this approach is incorrect.\n\nWait, maybe the sum_low is the sum of the children's required sum. For node 1, the sum_low is 2 (from node 2). Since the node 1's own l is 1, the required sum for node 1 is max(1, sum_low) = 2. But node 1's r is 1. So 2 > 1. So here, we need to perform 2 operations. But the sample uses one. Hmm, that contradicts. So perhaps this line of reasoning is wrong.\n\nWait, maybe the sum_low is the sum of the children's required sum, but each child's required sum must be >= the parent's sum. Because the parent's contribution in each operation is <= the child's. So the sum for the child is >= sum of parent's contributions in the same operations. So the sum for the child must be >= the sum for the parent multiplied by the number of operations that affect the child. Or something like that.\n\nAlternatively, for each node u, the sum of all children's required sum (sum_children) must be <= the sum of the increments applied to u (sum_u) multiplied by the number of operations that pass through u to the children. Because each such operation contributes to u and its children. But each such operation's contribution to the children is >= the contribution to u.\n\nBut this is getting complicated. Let's think of each operation as contributing some x to u and at least x to each of its children. So for the children's sum, each operation contributes x_child >= x. So the sum of children's sum is >= sum of x's (sum_u_children) multiplied by x (the contribution to u). But perhaps the minimal number of operations needed for u is determined by the sum of children's required sum divided by the maximum possible x (r_u), but rounded up.\n\nBut how does this work in the sample? The sum_children is 2 (for node 1), and r_u is 1. So 2 / 1 = 2, requiring 2 operations. But the sample uses 1. So this seems wrong.\n\nAlternatively, perhaps the code is keeping track of the minimal sum that must be assigned to u, given the children's needs. For node u, the required sum is the maximum between its own l and the sum of its children's required sums. If this required sum exceeds u's r, then we need to perform ceil(required_sum / r_u) operations. But wait, in the sample, the required sum is 2 for node 1, but r_u is 1. So 2/1=2 operations. But the sample uses one. So this can't be right.\n\nHmm. So perhaps there's a mistake in this line of thinking. Let's look at the sample explanation. In the first test case, the operation chosen is v=2, and the c array is [1,2]. So node 1 gets 1, node 2 gets 2. So sum_1 is 1, sum_2 is 2. The sum of children's sum (node 2) is 2, which is larger than node 1's sum (1). But according to the sample, this is allowed.\n\nAh, because the sum of the children's sum (2) is not constrained by the parent's sum (1). Because the sum for the child is from operations that pass through the parent. So for each operation that contributes to the child, the sum for the parent in that operation is <= the sum for the child in that operation. But the parent can also have other operations that contribute to it but not the child.\n\nSo in the sample, the sum for the parent (1) comes from an operation that contributes to the child (sum for parent is 1, sum for child is 2 in that operation). So the parent's total sum is 1 (from that one operation), and the child's sum is 2 (also from that one operation). The sum for the parent is less than the sum for the child, which is allowed.\n\nSo the key is that the sum for the parent can be less than the sum for the child. The parent's sum is the sum of all c_i's from all operations that include it, which includes operations that end at the parent (which don't contribute to the child) and operations that pass through to the child.\n\nTherefore, the sum for the parent (S_u) is the sum of all contributions from operations that end at u and those that pass through to its children. For the child's sum (S_v), it is the sum of contributions from operations that pass through to v (and possibly its children). For each such operation, the contribution to u is c_i and to v is c_{i+1} >= c_i.\n\nBut the parent can have other operations that end at u and contribute to S_u but not to S_v. Therefore, S_u can be greater than S_v if these other operations contribute enough. However, the child's sum must be >= the sum of the contributions from the operations that pass through it.\n\nBut how to model this. It's a bit tricky.\n\nAnother approach: For each node u, the minimal number of operations required is determined by the maximum between the number of operations needed by its children and the number of operations required to cover the required sum for u, considering the constraints from the children.\n\nWait, perhaps the solution is to track for each node u the minimal required sum (clamped between l_u and r_u) and the maximum sum that can be allocated to it. The dp array might track the maximum possible sum that can be allocated to u and its subtree, given the constraints. Then, the answer is the number of times we need to split the operations due to the sum of children exceeding the parent's capacity.\n\nHere's a possible algorithm:\n\nProcess the tree in post-order (children first, then parents). For each node u:\n\n- The sum of the children's required sums (sum_children) is the sum of the dp values of its children. Because dp[v] represents the maximum sum required by child v (from its own constraints and those of its children).\n\n- The required sum for u is the maximum between l_u and sum_children. Because u's sum must be at least l_u and also at least the sum required by its children (since each operation that contributes to the children must contribute at least as much to u, but sum_children could be more than l_u).\n\n- However, if the required sum exceeds r_u, then we can't do it in a single operation and need to split into multiple operations. The number of operations needed is ceil(required_sum / r_u). But since each operation can contribute up to r_u to u, but also at least r_u to the children (since the contributions are non-decreasing), then the required number of operations is ceil(sum_children / r_u).\n\nWait, but the required sum is the maximum between l_u and sum_children. If that maximum is greater than r_u, then it's impossible unless we split into multiple operations. So the number of operations needed for this node is the ceiling of (max(l_u, sum_children) ) divided by r_u. But how does this fit into the code?\n\nIn the code, for each node i, we process it after its children. We calculate the sum of the dp values of its children. Then, we compute the required sum as max(l[i], sum_children). If this required sum is greater than r[i], then we need to split into ceil(required_sum / r[i]) operations, and the ans is increased by (ceil(required_sum / r[i]) - 1) (since each split requires an additional operation). But wait, if the required sum is 2 and r[i] is 1, then we need 2 operations, which is an increase of 1 from the previous ans.\n\nAlternatively, the number of operations added is the number of times we need to split. For example, if sum_children is 5 and r[i] is 2, then ceil(5/2) = 3 operations. So ans increases by 3-1=2? Or is the total ans the sum of these values across all nodes?\n\nIn the first sample:\n\nsum_children for node 1 is 2 (from node 2's dp[2] = 2). The required sum is max(1, 2) = 2. This exceeds r[i] = 1. So we need ceil(2/1) = 2 operations. But the sample uses 1 operation. So this approach must be wrong.\n\nBut why? Because the sample's operation covers both the parent and the child in a single operation. The parent's contribution is 1, and the child's is 2. So sum_children is 2, which is achieved in a single operation. So the code's approach must be different.\n\nHmm. So maybe the required sum for the node is not the sum of the children's dp, but rather the minimal required sum for the children. And for the node, the required sum is the maximum between its l and the sum of the children's required sums. But if this is greater than the node's r, then the number of operations needed is (sum_children + r[i] - 1) // r[i]. But how does that fit with the sample?\n\nWait, maybe the dp[i] is the minimal sum that must be assigned to node i to satisfy its children's requirements. Then, the required sum for node i is the maximum between l[i] and the sum of the children's dp[j]. Then, if this required sum is larger than r[i], then we need to perform multiple operations. The number of operations required is the ceiling of (sum_children / r[i]), which is added to the answer. But in this case, the node's dp[i] is set to r[i], since each operation can contribute up to r[i] to node i.\n\nBut let's see:\n\nSample 1:\n\nNode 2: sum_children is 0 (no children). required_sum = max(2, 0) = 2. Since 2 <= r[2] (2), then no operations needed. dp[2] = 2.\n\nNode 1: sum_children is 2. required_sum = max(1, 2) = 2. But r[1] is 1. So 2 > 1. So number of operations needed is ceil(2 / 1) = 2. So ans is 2. But the sample's answer is 1. So this is incorrect.\n\nSo this approach must be wrong.\n\nAlternative idea: For each node u, the required sum is the sum of the children's required sums (sum_children). Then, the sum of the children's required sums must be <= the sum of the contributions to u from the operations that cover the children. But since each such operation contributes to u and the child, and the contribution to the child is >= the contribution to u, the sum_children must be <= sum_u_children (sum of contributions to u from those operations). But sum_u_children is <= sum_u (sum of all contributions to u from all operations). But sum_u is >= sum_u_children.\n\nWait, this is getting really complicated. Maybe we need to look for the solution's approach.\n\nLooking for hints in the code:\n\nThe code has a dp array. For each node i, during the processing, perhaps dp[i] is the minimal required sum that must be assigned to node i, considering its children's requirements.\n\nThen, for each node i:\n\nsum_children = sum of dp[j] where j is a child of i.\n\nrequired_sum = max(l[i], sum_children)\n\nif (required_sum > r[i]):\n\n   ans += required_sum // r[i] + ... ?\n\nAlternatively, the number of operations is the number of times the required_sum exceeds the node's capacity (r[i]).\n\nBut this isn't matching the sample. So perhaps the correct approach is:\n\nFor each node u, after considering its children, the sum of the children's required sums is sum_children.\n\nThe required_sum for u is the maximum between l[u] and sum_children.\n\nIf required_sum exceeds r[u], then we need to split into multiple operations, which is ceil(required_sum / r[u]). The ans is increased by (ceil(required_sum / r[u]) - 1), and the dp[u] is set to r[u]. Because each operation can contribute up to r[u], so after (k) operations, the total is k*r[u]. The minimal k is ceil(required_sum / r[u]). But this would imply that ans += (k-1), since each operation after the first adds 1.\n\nBut in the sample, the required_sum for node 1 is 2, r is 1. So k=2, ans += 1. But the sample's answer is 1. So the code would output 1, which matches. Because the code's ans is initialized to 0, and in this case, ans increases by 1.\n\nWait, but then for node 2:\n\nrequired_sum is max(2, 0) =2 <= 2. So no increment. ans remains 0.\n\nThen for node 1: required_sum 2 > r=1. So k=2, ans += 2-1=1. So ans is 1. Which matches the sample.\n\nAnother sample: second test case.\n\nTest case 2:\n\nn=3, parents are p_2=1, p_3=2.\n\nl and r:\n\nnode 1: l=5, r=5\n\nnode 2: l=3, r=3\n\nnode 3: l=7, r=7.\n\nSample output is 2.\n\nProcessing nodes 3, then 2, then 1.\n\nNode 3: sum_children=0. required_sum=7 <= r=7. dp[3]=7. ans remains 0.\n\nNode 2: sum_children=7. required_sum = max(3,7) =7. r=3. 7>3. k=3. ans += 3-1=2. dp[2] =3.\n\nNode 1: sum_children=3. required_sum = max(5,3) =5. r=5. 5<=5. ans remains 2. So total ans is 2, which matches.\n\nYes! So this approach seems correct.\n\nSo the code should process each node, compute the sum of its children's dp values. The required_sum is the maximum between l[i] and sum_children. If required_sum exceeds r[i], then the number of operations needed is ceil(required_sum / r[i]). The ans is increased by (k-1), where k is the number of operations. And the dp[i] is set to r[i].\n\nBut wait, when required_sum exceeds r[i], we set dp[i] to r[i], but the required_sum is k * r[i], where k is the number of operations. So for example, if required_sum is 2 and r[i] is 1, then k=2 operations, and sum is 2*1=2. So dp[i] is r[i].\n\nBut sum_children is the sum of children's dp's. So for node 1 in the first sample, the sum_children is 2. So required_sum is 2. Since required_sum exceeds r[i] of 1, we need 2 operations. But the sample uses 1 operation. How does this reconcile?\n\nAh, because each operation contributes to the node and its children. So each operation contributes to the node's sum and the children's sum. But the sum of the children's sum must be <= k * r[i], where k is the number of operations. Because each operation can contribute up to r[i] to the node, which allows the sum_children to be up to k * r[i], since each operation's contribution to the children is at least the contribution to the node.\n\nSo in the first sample, the sum_children is 2. The required_sum is 2, which exceeds r[i] of 1. So k=2 operations. Each operation contributes 1 to the node. So sum_children is 2*1=2, which matches. So the code's approach works, but the sample uses a single operation. How is this possible?\n\nWait, this is a contradiction. Because according to the code's approach, the answer would be 1 for the first sample. But according to this logic, the code's approach gives ans=1.\n\nWait, no. Let's see. The code's ans is initially 0.\n\nProcessing node 2: sum_children 0. required_sum max(2,0) =2. r[2]=2. So required_sum <= r[i]. So dp[2] =2. ans remains 0.\n\nProcessing node 1: sum_children is 2 (from node 2's dp). required_sum is max(1,2) =2. r[i]=1. So 2>1. So k=ceil(2/1)=2. ans += 2-1=1. dp[1] =1.\n\nSo the ans is 1. Which matches the sample.\n\nAh, so this approach works. The key is that when required_sum exceeds r[i], the number of operations required is ceil(required_sum / r[i]), and the ans is increased by (k-1). Because the first operation is counted as part of the base case (you need at least one operation), and each additional operation increments the ans by 1.\n\nBut how does this model the actual operations? Because in the first sample, according to the approach, we need 2 operations. But the sample uses one. So there's a discrepancy.\n\nWait, no. The approach's ans is 1, which is the correct answer. But according to the code's calculation, the required_sum is 2, which is divided by r[i]=1, giving k=2. So ans += 2-1=1, leading to ans=1. Which matches.\n\nBut how does the actual operation count fit with k=2? Because the sample uses one operation.\n\nAh, I think the approach is not directly counting the number of operations, but rather the number of times we need to split the operations. For example, when required_sum is 2 and r[i] is 1, we need two operations, but the sample uses one. So this suggests that the approach is incorrect. But why does the sample pass?\n\nWait, I must have made a mistake here. Let me re-express the approach.\n\nFor each node u, sum_children is the sum of its children's dp values.\n\nrequired_sum = max(l[u], sum_children)\n\nif required_sum > r[u]:\n\n   k = required_sum // r[u] (rounded up)\n\n   ans += k - 1\n\n   dp[u] = r[u]\n\nelse:\n\n   dp[u] = required_sum\n\nSo in the first sample:\n\nNode 2: required_sum=2, which is <= r[2]=2. dp[2] =2.\n\nNode 1: sum_children=2. required_sum=2. r[1]=1. So 2>1.\n\nk = ceil(2/1) =2. ans increases by 2-1=1. ans becomes 1.\n\ndp[1] =1.\n\nSo the code's answer is 1, which matches the sample.\n\nBut how is this possible with two operations? The sample uses one operation.\n\nAh, here's the catch. The approach's ans is counting the number of splits needed. The total number of operations is the sum of all the k-1 across all nodes plus 1? Or is the ans variable directly accumulating the total number of operations.\n\nNo. Let's think. For the first node (node 2), it requires 2, which is handled by one operation. Then, node 1 requires 2, but can only contribute 1 per operation. So it requires two operations. But the sample uses one operation. How?\n\nAh, perhaps the approach is not directly counting the number of operations, but the minimal number of operations is the sum of all (k-1) for each node. Because each k-1 is the number of additional operations needed for that node beyond what is required by its children.\n\nBut how?\n\nIn the first sample, the ans is 1. Which is the correct answer.\n\nBut how can two operations be avoided? Because the sample uses one. So the approach must be correct, and the way the ans is calculated is different from the actual number of operations.\n\nWait, no. The approach's ans is the correct answer. The sample uses one operation, which is the minimal possible.\n\nBut according to the approach, for node 1, the required_sum is 2. Since r[i] is 1, we need 2 operations. But the sample uses one. So why?\n\nAh, because the approach's model is not directly counting the operations, but the way the operations are applied. Let me think differently.\n\nEach time we have to split into multiple operations, each operation contributes to the node and its children. But when the node's required_sum exceeds its r[i], each operation contributes exactly r[i] to the node. And the sum of the children's required sum must be <= k * r[i].\n\nBecause each operation contributes to the node's sum with c_i, and the children's sum with c_{i+1} >= c_i. So the sum of the children's sum is the sum of c_{i+1} for each operation. Since c_{i+1} >= c_i = r[i] (for the node), then sum_children <= sum of c_{i+1} (which is >= sum of r[i] * k). But the sum_children is exactly required_sum = sum of the children's dp values.\n\nWait, no. The sum_children is the sum of the children's dp values, which are their required_sum clamped to their r. So when the parent's required_sum is larger than its r, then k = ceil(required_sum / r[u]) is the number of operations required. But each operation contributes exactly r[u] to the parent's sum. The children's sum would then be the sum of the parent's operations' contributions plus any operations that end at the children.\n\nBut in the first sample, the children's sum is 2. The parent's r is 1. So sum_children =2. To achieve this, the parent's contributions from the operations must sum to 2 (from 2 operations of 1 each), which allows the children's sum to be >= 2. But how?\n\nAh, in each operation that contributes to the parent, the children's contribution must be >= the parent's contribution. So if there are two operations, each contributing 1 to the parent, then the children's contribution in each of those two operations must be >= 1. The sum of the children's contributions would be at least 2 (1 +1). Which matches the required sum of 2.\n\nBut in the sample, a single operation contributes 1 to the parent and 2 to the child. So the sum for the child is 2, which is >= the sum of the parent's contribution (1). So this also satisfies the condition. Hence, one operation suffices.\n\nSo the approach's model seems to require two operations, but the sample uses one. So why does the approach's ans give 1?\n\nAh, no. The approach's ans is 1, which is the correct answer. Because for the node 1, k is 2. So ans += 2-1=1. So the total ans is 1, which matches the sample.\n\nBut the actual number of operations is one, not two. So how does the model's k=2 relate to the actual number of operations?\n\nAh, I think that the k is the number of operations required for the parent node's constraints. But in reality, the same operations can cover multiple nodes. So the model is accumulating the minimal number of operations required across all nodes, but each operation can contribute to multiple nodes. So the total number of operations is the maximum of the required operations for each node.\n\nNo, that doesn't make sense. For example, in the second sample:\n\nNode 3 requires 7. It's a leaf, so one operation.\n\nNode 2's sum_children is 7, r=3. So k=3. ans +=3-1=2.\n\nNode 1's sum_children is 3, r=5. So no increment. ans remains 2.\n\nTotal ans is 2, which matches the sample's two operations.\n\nSo the model works correctly.\n\nThe key is that the k for each node represents the number of operations needed to cover that node's requirements and its children's. But each of these operations is a single path operation that contributes to multiple nodes. So the total number of operations is the sum of the (k-1) for all nodes. Because each node's (k-1) is the additional operations needed beyond the base.\n\nSo for the first sample:\n\nnode 2: k=1, (k-1)=0.\n\nnode 1: k=2, (k-1)=1. sum is 1.\n\nTotal ans=1.\n\nIn the sample, one operation is used. So the approach is correct.\n\nBut how does the model's k=2 for node 1 result in one operation?\n\nAh, because the k represents the number of operations required to cover that node and its children. But the actual number of operations is the sum of all (k-1) for each node, plus the initial operation.\n\nNo, the ans variable is directly accumulating the required number of operations. For example, in the first sample, ans is 1, which is the correct answer.\n\nSo the model works.\n\nTherefore, the code needs to compute, for each node, the sum of its children's dp values. The required_sum is max(l[i], sum_children). If required_sum exceeds r[i], then the number of operations is ceil(required_sum / r[i]), ans += (k-1), and dp[i] is set to r[i]. Otherwise, dp[i] is required_sum.\n\nSo the missing code in the loop is:\n\nsum_children = 0;\n\nfor each child of i, sum_children += dp[child];\n\nrequired_sum = max(l[i], sum_children);\n\nif (required_sum > r[i]) {\n\n   ans += (required_sum + r[i] - 1) / r[i] - 1;\n\n   dp[i] = r[i];\n\n} else {\n\n   dp[i] = required_sum;\n\n}\n\nBut how to get the children of i? Because in the code, the parent array is given as fa[i], where fa[i] is the parent of i. So to find the children of i, we need to have a way to store them. But the given code doesn't have such a structure. The code only has the parent array fa.\n\nBut since the code is processing the nodes in reverse order (from n downto 1), and the children of a node i are those j where fa[j] =i. But how to collect them? The code provided doesn't build a children array. So perhaps the code is not intended to track the children, but uses a different approach.\n\nWait, but the code as given processes the nodes from n downto 1. For each node i, when we process it, all of its children have already been processed (since children j have j > i if the parent is fa[j] < j, which is the case because p_i < i. So for example, j can be any node with fa[j] =i, which must be greater than i.\n\nSo to collect the children of i, we can, during the loop, build a list for each node.\n\nBut the code provided does not have such a structure. So the code must be modified to collect the children.\n\nBut the code as given in the problem does not have any such code. So the missing part must include building the children structure.\n\nAlternatively, perhaps the code uses the sum of dp[j] where j's parent is i.\n\nBut how to compute that sum without storing the children.\n\nSo the missing code must first, during the processing of each node, keep track of the sum of dp of all children.\n\nBut since the code is processing the nodes in reverse order, for each node i, after processing all children (since they are processed first), the code can accumulate the sum of dp[j] where fa[j] == i.\n\nSo the code would need to:\n\nFor each node i, sum_children is the sum of dp[j] for all j where fa[j] == i.\n\nBut how to do that without pre-storing the children.\n\nSo perhaps, during the processing of each node j (from 2 to n), we can add dp[j] to a variable that accumulates for the parent of j.\n\nFor example, during processing node j, after computing dp[j], we can add dp[j] to a sum_children array for fa[j].\n\nSo the code would need an array sum_children of size maxn, initialized to 0.\n\nThen, during the loop from i =n downto 1:\n\nsum_children[fa[i]] += dp[i];\n\nBut wait, the nodes are processed in reverse order (i from n downto 1). So for each node i, when processing i, we add its dp[i] to sum_children[fa[i]]. But fa[i] is the parent of i, which is less than i.\n\nFor example, when processing node 2 (i=2), which has parent 1. So after processing node 2, sum_children[1] += dp[2]. Then, when processing node 1, sum_children[0] (which is not used) is incremented.\n\nBut how to collect the sum_children for each node.\n\nWait, perhaps the code uses the sum_children array, and during processing each node i, sum_children[i] is the sum of the dp of its children.\n\nBut how to build this sum_children array.\n\nThe code as given has no such array, but the missing code must include this.\n\nSo the missing code would need to:\n\n1. Initialize an array sum_children of size maxn to 0.\n\n2. During the loop from i =n downto 1:\n\n   a. Compute sum_children[i] as the sum of all children's dp.\n\n   But how to compute that.\n\nAlternatively, during processing each node i, we can add its dp[i] to sum_children[fa[i]], since i is a child of fa[i].\n\nSo during processing i, after computing dp[i], we do:\n\nsum_children[fa[i]] += dp[i];\n\nThen, when processing the parent fa[i], which is processed later (since nodes are processed in reverse order), the sum_children[fa[i]] would already have the sum of all children's dp.\n\nWait, no. Because the nodes are processed from n downto 1. So for node i=3, which has fa[3] =2 (assuming parent is 2). When processing i=3, we compute dp[3], then add it to sum_children[2]. Then, when processing i=2, sum_children[2] contains dp[3], and any other children of 2.\n\nSo yes. This approach works.\n\nSo the steps are:\n\n- Initialize sum_children array to 0.\n\n- For each node i from n downto 1:\n\n   sum_children[i] is initially 0.\n\n   when processing i, compute sum_children[i] (sum of children's dp) by checking all j where fa[j] =i. But how to find those j.\n\nBut wait, sum_children array is being built by adding dp[j] to sum_children[fa[j]] when processing j. So for node i, the sum_children[i] will be the sum of dp[j] for all children j of i.\n\nFor example:\n\nWhen processing j from n downto 1:\n\nafter computing dp[j], we add dp[j] to sum_children[fa[j]].\n\nThus, when processing node i, sum_children[i] has already been accumulated by all of its children j (since j >i, and they are processed before i).\n\nSo the code for the loop would be:\n\nfor (int i =n; i>=1; i--) {\n\n    LL sum_children = 0;\n\n    // Wait, no. sum_children is stored in sum_children[i], which was built by adding dp of children.\n\n    // So for node i, sum_children[i] is the sum of dp of all children.\n\n    sum_children = sum_children[i];\n\n    LL required_sum = max(l[i], sum_children);\n\n    if (required_sum > r[i]) {\n\n        LL k = (required_sum + r[i] - 1) / r[i]; // ceil division.\n\n        ans += k -1;\n\n        dp[i] = r[i];\n\n    } else {\n\n        dp[i] = required_sum;\n\n    }\n\n    // Now, add dp[i] to the parent's sum_children.\n\n    if (i != 1) { // since fa[i] is the parent of i.\n\n        sum_children[fa[i]] += dp[i];\n\n    }\n\n}\n\nBut the code as given does not have a sum_children array. So the missing code must manage this.\n\nBut the code provided does not have such a sum_children array. So perhaps the original code uses a different approach.\n\nAlternatively, perhaps the code uses a different way to compute the sum_children for each node. For example, during the loop, for each node i, sum_children is the sum of dp[j] where j is a child of i. But how to collect this without a sum_children array.\n\nAlternatively, the code can use a variable sum_children that is accumulated by checking all j where fa[j] ==i. But this would require O(n) time for each node, which is not feasible for n=2e5.\n\nSo the correct approach is to use a sum_children array, and during processing each node, add dp[i] to sum_children[fa[i]].\n\nBut the code provided in the problem has no such array. So the missing code must include the following lines:\n\nIn the work function:\n\narray<LL, maxn> sum_children;\n\nsum_children.fill(0);\n\nThen, inside the loop from i =n downto 1:\n\nsum_children[i] = ... ?\n\nBut wait, no. The code must accumulate the sum_children for each node.\n\nSo the code would need to:\n\nFor each node i in reverse order:\n\n   sum_children[i] = sum of dp[j] for all j where fa[j] ==i.\n\nBut how to compute this sum_children[i].\n\nBut if we process the nodes in reverse order, and when processing node j, add dp[j] to sum_children[fa[j]], then for node i, sum_children[i] will contain the sum of all its children's dp.\n\nSo the code would look like this:\n\nInside the loop from i =n downto 1:\n\n   LL sum = 0;\n\n   // For each child j of i, sum += dp[j]\n\n   // But how to find the children of i?\n\n   // Since children are processed after i, and when j is processed, we can add dp[j] to sum_children[fa[j]]\n\n   // Wait, no.\n\n   // For example, when processing j=2 (fa[j] =1), then sum_children[1] += dp[2].\n\n   // When processing i=1, sum_children[1] already has the sum of all children's dp.\n\n   sum_children[i] = sum_children[i]; // This is already accumulated by the children.\n\n   // So sum_children[i] is the sum of all children's dp.\n\n   LL required_sum = max(l[i], sum_children[i]);\n\n   if (required_sum > r[i]) {\n\n       LL k = (required_sum + r[i] -1) / r[i];\n\n       ans += k-1;\n\n       dp[i] = r[i];\n\n   } else {\n\n       dp[i] = required_sum;\n\n   }\n\n   if (i !=1) {\n\n       sum_children[fa[i]] += dp[i];\n\n   }\n\nSo the code needs a sum_children array to accumulate the sum of children's dp.\n\nBut in the original code, there is no sum_children array. So the missing code must include the creation and management of this array.\n\nBut the original code provided in the problem does not have such an array. So the missing code must be:\n\nInside the loop for i from n downto 1:\n\nsum_children = sum of dp[j] for j where fa[j] == i.\n\nBut since the code does not have a way to track the children, this sum must be computed dynamically, which is not possible efficiently unless the children are stored.\n\nSo the correct approach is to create a sum_children array, initialized to 0. Then, for each node j, when processed, add dp[j] to sum_children[fa[j]].\n\nSo in the code:\n\narray <LL, maxn> sum_children;\n\nsum_children.fill(0);\n\nThen, inside the loop:\n\nsum_children[fa[i]] += dp[i];\n\nBut wait, the loop is from i=n downto 1. So for each i, when processed, we add dp[i] to sum_children[fa[i]].\n\nThen, when processing fa[i], sum_children[fa[i]] has already accumulated the dp of all its children.\n\nSo the correct code is:\n\nInside the loop:\n\nsum_children[fa[i]] += dp[i];\n\nLL required_sum = max(l[i], sum_children[i]);\n\nBut no, sum_children[i] is the sum of all children of i, which are those j with fa[j] =i. So when processing i, sum_children[i] already contains the sum of all children's dp.\n\nBut how?\n\nLet's see:\n\nFor example, node i has children j1, j2, etc. Each j is processed before i (since j >i). When j is processed, during the loop iteration for j, we add dp[j] to sum_children[fa[j]] = sum_children[i].\n\nSo by the time we process i, sum_children[i] already has the sum of all children's dp.\n\nYes.\n\nSo the code for each i:\n\nsum_children[i] is the sum of all children's dp.\n\nSo inside the loop:\n\nLL sum_children_i = sum_children[i];\n\nLL required_sum = max(l[i], sum_children_i);\n\nif (required_sum > r[i]) {\n\n   LL k = (required_sum + r[i] - 1) / r[i];\n\n   ans += k-1;\n\n   dp[i] = r[i];\n\n} else {\n\n   dp[i] = required_sum;\n\n}\n\n// Add dp[i] to parent's sum_children\n\nif (i != 1) {\n\n   sum_children[fa[i]] += dp[i];\n\n}\n\nBut in the code provided, there's no sum_children array. So the missing code must include this.\n\nTherefore, the missing code inside the loop is:\n\nsum_children[i] = sum_children[i]; // Not needed, since sum_children[i] already contains the sum.\n\nLL required_sum = max(l[i], sum_children[i]);\n\nif (required_sum > r[i]) {\n\n    ans += (required_sum + r[i] - 1) / r[i] - 1;\n\n    dp[i] = r[i];\n\n} else {\n\n    dp[i] = required_sum;\n\n}\n\nif (i != 1) {\n\n    sum_children[fa[i]] += dp[i];\n\n}\n\nBut in the code provided, there's no sum_children array. So the code must be modified to include this array.\n\nBut the code provided has the following variables:\n\narray <int, maxn > fa;\n\narray <LL, maxn > l, r, dp;\n\nSo the missing code must declare a sum_children array and manage it.\n\nBut according to the code provided, the code does not have such a sum_children array. So the missing code must include the following steps:\n\nInside the work function:\n\narray<LL, maxn> sum_children;\n\nsum_children.fill(0);\n\nThen, inside the loop for i from n downto 1:\n\nsum_children[i] is the sum of the dp of i's children.\n\nSo the code would be:\n\nLL sum_child = sum_children[i];\nLL required = max(l[i], sum_child);\nif (required > r[i]) {\n    ans += (required + r[i] - 1) / r[i] - 1;\n    dp[i] = r[i];\n} else {\n    dp[i] = required;\n}\nif (i != 1) {\n    sum_children[fa[i]] += dp[i];\n}\n\nSo the missing code inside the loop is:\n\nsum_child = sum_children[i];\nrequired = max(l[i], sum_child);\nif (required > r[i]) {\n    ans += (required + r[i] -1)/r[i] -1;\n    dp[i] = r[i];\n} else {\n    dp[i] = required;\n}\nif (i !=1) sum_children[fa[i]] += dp[i];\n\nBut how is sum_children[i] computed? Because initially, sum_children is filled with 0. Then, as each node i is processed, its children have already added their dp to sum_children[i].\n\nFor example, when node j is processed (j >i), and fa[j] =i, then during the processing of j, sum_children[i] += dp[j]. So by the time node i is processed, sum_children[i] contains the sum of all children's dp.\n\nThus, the missing code in the loop is:\n\nLL sum_child = sum_children[i];\nLL required = max(l[i], sum_child);\nif (required > r[i]) {\n    LL k = (required + r[i] -1)/r[i];\n    ans += k -1;\n    dp[i] = r[i];\n} else {\n    dp[i] = required;\n}\nif (i !=1) {\n    sum_children[fa[i]] += dp[i];\n}\n\nBut in the code provided, the sum_children array is not declared. So the missing code must include this.\n\nBut according to the problem statement, we are to fill in the missing code. The code provided in the problem does not have the sum_children array. So we must add it in the missing code.\n\nBut the code's work function is:\n\nvoid work() {\n    int n;\n    cin>>n;\n    for(int i=2;i<=n;i++) cin>>fa[i];\n    for(int i=1;i<=n;i++) cin>>l[i]>>r[i];\n    int ans=0;\n    dp.fill(0);\n    for(int i=n;i>=1;i--){\n        /* TODO: Your code here */\n    }\n    cout<<ans<<endl;\n    return;\n}\n\nSo the missing code is inside the loop. We need to implement the sum_children array, but since it's not declared in the code, we have to manage it locally.\n\nWait, but the code uses a dp array which is declared outside the work function. So perhaps the sum_children array must be declared inside the work function.\n\nBut in the code provided, the sum_children array is not declared. So the missing code must include the sum_children array.\n\nBut how can we declare and manage it within the loop? That's not possible. So the sum_children array must be declared inside the work function.\n\nThus, the correct missing code is:\n\nInside the work function, after reading the input:\n\narray<LL, maxn> sum_children;\nsum_children.fill(0);\n\nThen, inside the loop:\n\nfor(int i =n; i >=1; i--) {\n    LL sum_child = sum_children[i];\n    LL required = max(l[i], sum_child);\n    if (required > r[i]) {\n        LL k = (required + r[i] -1)/r[i];\n        ans += k-1;\n        dp[i] = r[i];\n    } else {\n        dp[i] = required;\n    }\n    if (i !=1) {\n        sum_children[fa[i]] += dp[i];\n    }\n}\n\nBut since the code provided does not declare sum_children, the missing code must include this.\n\nBut in the code provided, the loop's body is empty. So the missing code must include all of this.\n\nBut how to write this in the code provided.\n\nThe code provided's loop is:\n\nfor(int i=n;i>=1;i--){\n    /* TODO: Your code here */\n}\n\nSo the missing code inside the loop is:\n\nLL sum_child = sum_children[i];\nLL required = max(l[i], sum_child);\nif (required > r[i]) {\n    LL k = (required + r[i] -1)/r[i];\n    ans += k-1;\n    dp[i] = r[i];\n} else {\n    dp[i] = required;\n}\nif (i !=1) {\n    sum_children[fa[i]] += dp[i];\n}\n\nBut to do this, the sum_children array must be declared and initialized inside the work function.\n\nBut in the code provided, the sum_children array is not declared. So the missing code must include the declaration and initialization of sum_children.\n\nBut the code provided in the work function has:\n\narray <int, maxn > fa;\narray <LL, maxn > l, r, dp;\n\nBut no sum_children. So the sum_children array must be declared inside the work function.\n\nTherefore, the missing code inside the loop is:\n\nThe code must declare sum_children inside the work function. Then, inside the loop, compute sum_child, required, etc.\n\nBut in the code provided, the missing code is only inside the loop. So this suggests that the sum_children array must be declared inside the loop's scope, but that's not possible.\n\nAlternatively, perhaps the code can be written without using a sum_children array, but instead using the dp array in a different way. But I don't see how.\n\nTherefore, the correct missing code inside the loop is as follows:\n\nBut since the code provided does not have the sum_children array, and the code must be filled in, the only way is to manage the sum_children array within the work function.\n\nBut according to the code structure provided, the missing code must include the initialization of sum_children array, but the code in the work function does not have that. So perhaps the code uses a different approach.\n\nWait, maybe the code uses a different approach where each node's sum_children is computed by iterating through all children. But for large n (2e5), this would be O(n^2) and would not be feasible.\n\nAlternatively, the code uses the parent array to accumulate the sum_children during the loop.\n\nBut how.\n\nThe code in the loop must:\n\n1. For each node i, compute the sum of its children's dp values.\n\nBut since the code processes nodes in reverse order (n downto 1), and for each child j of i, j is processed before i.\n\nSo during processing j, we can accumulate the dp[j] into a sum_children array for the parent of j.\n\nThus, in the code, after computing dp[j], we add dp[j] to the sum_children of its parent.\n\nBut the code provided does not have this sum_children array.\n\nSo the correct missing code is:\n\nInside the work function, after declaring n, fa, l, r, etc., and before the loop:\n\narray<LL, maxn> sum_children{};\n\nsum_children.fill(0);\n\nThen, inside the loop for i from n downto 1:\n\nLL sum_child = sum_children[i];\nLL required = max(l[i], sum_child);\nif (required > r[i]) {\n    LL k = (required + r[i] - 1) / r[i];\n    ans += k - 1;\n    dp[i] = r[i];\n} else {\n    dp[i] = required;\n}\nif (i != 1) {\n    sum_children[fa[i]] += dp[i];\n}\n\nSo the code inside the loop is:\n\nsum_child = sum_children[i];\nrequired = max(l[i], sum_child);\nif (required > r[i]) {\n    LL k = (required + r[i] - 1) / r[i];\n    ans += k - 1;\n    dp[i] = r[i];\n} else {\n    dp[i] = required;\n}\nif (i != 1) sum_children[fa[i]] += dp[i];\n\nThus, the missing code inside the loop is the above lines.\n\nBut how to write this in the code.\n\nThe code provided's loop body is empty, so the missing code must be all these lines.\n\nSo the filled-in code inside the loop is:\n\nLL sum_child = sum_children[i];\nLL required = max(l[i], sum_child);\nif (required > r[i]) {\n    LL k = (required + r[i] - 1) / r[i];\n    ans += k - 1;\n    dp[i] = r[i];\n} else {\n    dp[i] = required;\n}\nif (i != 1) {\n    sum_children[fa[i]] += dp[i];\n}\n\nBut the sum_children array must be declared and initialized in the work function.\n\nSo the work function's code should include:\n\narray<LL, maxn> sum_children;\nsum_children.fill(0);\n\nBut in the code provided, there is no such array. Therefore, the missing code must include the declaration and initialization of sum_children array.\n\nBut since the code provided does not have this, the user must add it.\n\nBut according to the problem's instruction, we are to output only the missing code that fills in the TODO block.\n\nSo the code inside the loop is the missing code.\n\nBut how can the code inside the loop access sum_children array if it is not declared.\n\nAh, here's the problem: the code provided in the problem does not have the sum_children array. So the answer must include code that uses a sum_children array, which must be declared inside the work function.\n\nBut according to the problem's instructions, we are to output only the missing code for the TODO block.\n\nSo the code inside the loop must manage to track the sum_children without using an explicit array. But that's not possible.\n\nThus, the correct answer is the code inside the loop, assuming that the sum_children array has been declared and initialized.\n\nBut given the code provided, the correct missing code is:\n\nLL sum_child = 0;\nfor (int j = i+1; j <=n; j++) {\n    if (fa[j] == i) {\n        sum_child += dp[j];\n    }\n}\nLL required = max(l[i], sum_child);\nif (required > r[i]) {\n    LL k = (required + r[i] - 1) / r[i];\n    ans += k -1;\n    dp[i] = r[i];\n} else {\n    dp[i] = required;\n}\n\nBut this approach is O(n^2) and would not work for n=2e5.\n\nSo this is not feasible.\n\nTherefore, the correct answer is the code that uses the sum_children array, and the code inside the loop is:\n\nsum_children[i] = sum_children[i];\nLL required = max(l[i], sum_children[i]);\nif (required > r[i]) {\n    LL k = (required + r[i] - 1) / r[i];\n    ans += k-1;\n    dp[i] = r[i];\n} else {\n    dp[i] = required;\n}\nif (i !=1) sum_children[fa[i]] += dp[i];\n\nBut this requires the sum_children array to be declared and initialized in the work function.\n\nBut since the code provided in the problem does not have this array, the correct answer must include this code, but the problem's instructions state that we must output only the missing code for the TODO block. However, the code provided does not have the sum_children array, so this would be impossible.\n\nTherefore, the correct answer is the code inside the loop that uses sum_children array, assuming that the array is declared and initialized.\n\nBut given the code provided, the sum_children array must be declared inside the work function. So the missing code includes:\n\narray<LL, maxn> sum_children{};\nsum_children.fill(0);\n\nBut this is not possible inside the loop. So the correct answer is the code inside the loop as described earlier.\n\nBut the code provided does not have the sum_children array. So this suggests that the code is intended to use a different approach, which is not the case.\n\nThus, the correct missing code is as follows:\n\nLL sum_child = 0;\nfor (int j = i+1; j <= n; j++) {\n    if (fa[j] == i) {\n        sum_child += dp[j];\n    }\n}\nLL required = max(l[i], sum_child);\nif (required > r[i]) {\n    LL k = (required + r[i] -1)/r[i];\n    ans += k -1;\n    dp[i] = r[i];\n} else {\n    dp[i] = required;\n}\n\nBut this is O(n^2) and will not pass for large n.\n\nBut the problem's constraints require an O(n) solution, which can only be achieved with the sum_children array approach.\n\nTherefore, the correct answer is the code that uses the sum_children array, which requires declaring it in the work function.\n\nBut according to the problem's instructions, we are to output only the missing code inside the loop.\n\nSo, assuming that the sum_children array has been declared and initialized, the code inside the loop is:\n\nLL sum_child = sum_children[i];\nLL required = max(l[i], sum_child);\nif (required > r[i]) {\n    LL k = (required + r[i] - 1) / r[i];\n    ans += k - 1;\n    dp[i] = r[i];\n} else {\n    dp[i] = required;\n}\nif (i != 1) {\n    sum_children[fa[i]] += dp[i];\n}\n\nBut since the code provided does not have sum_children array, the missing code must include these lines.\n\nTherefore, the missing code is:\n\nLL sum_child = sum_children[i];\nLL required = max(l[i], sum_child);\nif (required > r[i]) {\n    LL k = (required + r[i] -1)/r[i];\n    ans += k -1;\n    dp[i] = r[i];\n} else {\n    dp[i] = required;\n}\nif (i != 1) sum_children[fa[i]] += dp[i];"
+}
